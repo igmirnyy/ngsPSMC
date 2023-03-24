@@ -76,94 +76,87 @@ int psmcversion(const char *fname) {//0 - fasta, 1 - psmc, 2 - vcf/bcf
 
 perpsmc * perpsmc_init(char *fname,int nChr) {
     assert(fname);
-    perpsmc *ret = new perpsmc;
+    perpsmc *ret = new perpsmc ;
     ret->fname = strdup(fname);
-    ret->bgzf_pos = ret->bgzf_gls = NULL;
+    ret->bgzf_pos=ret->bgzf_gls=NULL;
     ret->pf = NULL;
 
     size_t clen;
-    if (!fexists(fname)) {
-        fprintf(stderr, "\t-> Problem opening file: \'%s\'\n", fname);
+    if(!fexists(fname)){
+        fprintf(stderr,"\t-> Problem opening file: \'%s\'\n",fname);
         exit(0);
     }
     FILE *fp = NULL;
-    fp = fopen(fname, "r");
-    if (fp == NULL) {
-        fprintf(stderr, "\t-> Problem opening file:%s\n", fname);
+    fp=fopen(fname,"r");
+    if(fp==NULL){
+        fprintf(stderr,"\t-> Problem opening file:%s\n",fname);
         exit(0);
     }
     char buf[8];
-    assert(fread(buf, 1, 8, fp) == 8);
+    assert(fread(buf,1,8,fp)==8);
     ret->version = psmcversion(fname);
-    ret->nSites = 0;
-    fprintf(stderr, "\t-> Version of fname: \'%s\' is:%d\n", fname, ret->version);
-    int at = 0;//incrementer for breaking out of filereading if -nChr has been supplied
+    ret->nSites =0;
+    fprintf(stderr,"\t-> Version of fname: \'%s\' is:%d\n",fname,ret->version);
+    int at=0;//incrementer for breaking out of filereading if -nChr has been supplied
 
     //loop for fasta
-    if (ret->version == 0) {
-        fprintf(stderr,
-                "\t-> Looks like you are trying to use a version of PSMC that does not exists, assuming its a fastafile\n");
+    if(ret->version!=1){
+        fprintf(stderr,"\t-> Looks like you are trying to use a version of PSMC that does not exists, assuming its a fastafile\n");
         fclose(fp);
-        fp = NULL;
+        fp=NULL;
         ret->pf = perFasta_init(fname);
-        for (int i = 0; i < faidx_nseq(ret->pf->fai); i++) {
-            if (nChr != -1 && at++ >= nChr)
+        for(int i=0;i<faidx_nseq(ret->pf->fai);i++){
+            if(nChr!=-1&&at++>=nChr)
                 break;
-            char *chr = strdup(faidx_iseq(ret->pf->fai, i));
+            char *chr = strdup(faidx_iseq(ret->pf->fai,i));
             // fprintf(stderr,"\t-> [%s] %d) chr: %s\n",__FUNCTION__,i,chr);
             datum d;
-            d.nSites = faidx_seq_len(ret->pf->fai, chr);
+            d.nSites = faidx_seq_len(ret->pf->fai,chr);
             ret->nSites += d.nSites;
-            d.pos = d.saf = 0;
+            d.pos=d.saf=0;
             myMap::iterator it = ret->mm.find(chr);
-            if (it == ret->mm.end())
-                ret->mm[chr] = d;
-            else {
-                fprintf(stderr,
-                        "Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",
-                        chr);
+            if(it==ret->mm.end())
+                ret->mm[chr] =d ;
+            else{
+                fprintf(stderr,"Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",chr);
                 exit(0);
             }
-            free(chr);
         }
         return ret;
     }
-    else if(ret->version == 1){
-        //loop for gl
-        while (fread(&clen, sizeof(size_t), 1, fp)) {
-            if (nChr != -1 && at++ >= nChr)
-                break;
-            char *chr = (char *) malloc(clen + 1);
-            assert(clen == fread(chr, 1, clen, fp));
-            chr[clen] = '\0';
 
-            datum d;
-            if (1 != fread(&d.nSites, sizeof(size_t), 1, fp)) {
-                fprintf(stderr, "[%s.%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, fname);
-                exit(0);
-            }
-            ret->nSites += d.nSites;
-            if (1 != fread(&d.pos, sizeof(int64_t), 1, fp)) {
-                fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, fname);
-                exit(0);
-            }
-            if (1 != fread(&d.saf, sizeof(int64_t), 1, fp)) {
-                fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, fname);
-                exit(0);
-            }
+    //loop for gl
+    while(fread(&clen,sizeof(size_t),1,fp)){
+        if(nChr!=-1&&at++>=nChr)
+            break;
+        char *chr = (char*)malloc(clen+1);
+        assert(clen==fread(chr,1,clen,fp));
+        chr[clen] = '\0';
 
-            myMap::iterator it = ret->mm.find(chr);
-            if (it == ret->mm.end())
-                ret->mm[chr] = d;
-            else {
-                fprintf(stderr,
-                        "Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",
-                        chr);
-                exit(0);
-            }
-            free(chr);
+        datum d;
+        if(1!=fread(&d.nSites,sizeof(size_t),1,fp)){
+            fprintf(stderr,"[%s.%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
+            exit(0);
         }
-        fclose(fp);
+        ret->nSites += d.nSites;
+        if(1!=fread(&d.pos,sizeof(int64_t),1,fp)){
+            fprintf(stderr,"[%s->%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
+            exit(0);
+        }
+        if(1!=fread(&d.saf,sizeof(int64_t),1,fp)){
+            fprintf(stderr,"[%s->%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
+            exit(0);
+        }
+
+        myMap::iterator it = ret->mm.find(chr);
+        if(it==ret->mm.end())
+            ret->mm[chr] =d ;
+        else{
+            fprintf(stderr,"Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",chr);
+            exit(0);
+        }
+    }
+    fclose(fp);
         char *filepath_without_idx = (char *) calloc(strlen(fname) + 100, 1);//that should do it
         filepath_without_idx = strncpy(filepath_without_idx, fname, strlen(fname) - 3);//
         //  fprintf(stderr,"tmp:%s\n",tmp);
@@ -197,7 +190,6 @@ perpsmc * perpsmc_init(char *fname,int nChr) {
         bgzf_close(tmpfp);
         free(filepath_without_idx);
         free(filepath_gz);
-    }
     return ret;
 }
 
@@ -362,7 +354,9 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     for(std::map<const char*, std::vector<int > >::iterator it = positions.begin();it!=positions.end();it++){
         output_rawdata.pos= new int[positions[it->first].size()];
         memcpy(output_rawdata.pos, positions[it->first].data(),positions[it->first].size());
+        positions[it->first].clear();
         output_rawdata.gls= new double[likelihoods[it->first].size()];
+        likelihoods[it->first].clear();
         memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size());
         output_rawdata.len = positions[it->first].size();
 #if 1 //the code below should be read if we ever want to run on specific specified regions
