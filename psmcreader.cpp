@@ -74,7 +74,7 @@ int psmcversion(const char *fname) {//0 - fasta, 1 - psmc, 2 - vcf/bcf
 
 
 
-perpsmc * perpsmc_init(char *fname,int nChr) {
+perpsmc * perpsmc_init(char *fname,int nChr){
     assert(fname);
     perpsmc *ret = new perpsmc ;
     ret->fname = strdup(fname);
@@ -157,42 +157,40 @@ perpsmc * perpsmc_init(char *fname,int nChr) {
         }
     }
     fclose(fp);
-        char *filepath_without_idx = (char *) calloc(strlen(fname) + 100, 1);//that should do it
-        filepath_without_idx = strncpy(filepath_without_idx, fname, strlen(fname) - 3);//
-        //  fprintf(stderr,"tmp:%s\n",tmp);
+    char *tmp =(char*)calloc(strlen(fname)+100,1);//that should do it
+    tmp=strncpy(tmp,fname,strlen(fname)-3);
+    //  fprintf(stderr,"tmp:%s\n",tmp);
 
-        char *filepath_gz = (char *) calloc(strlen(fname) + 100, 1);//that should do it
-        snprintf(filepath_gz, strlen(fname) + 100, "%sgz", filepath_without_idx);
-        fprintf(stderr, "\t-> Assuming .psmc.gz file: \'%s\'\n", filepath_gz);
-        ret->bgzf_gls = strdup(filepath_gz);
-        BGZF *tmpfp = NULL;
-        tmpfp = bgzf_open(ret->bgzf_gls, "r");
-        if (tmpfp)
-            my_bgzf_seek(tmpfp, 8, SEEK_SET);
-        if (tmpfp && ret->version != psmcversion(filepath_gz)) {
-            fprintf(stderr, "\t-> Problem with mismatch of version of %s vs %s %d vs %d\n", fname, filepath_gz,
-                    ret->version, psmcversion(filepath_gz));
-            exit(0);
-        }
-        bgzf_close(tmpfp);
-        tmpfp = NULL;
+    char *tmp2 = (char*)calloc(strlen(fname)+100,1);//that should do it
+    snprintf(tmp2,strlen(fname)+100,"%sgz",tmp);
+    fprintf(stderr,"\t-> Assuming .psmc.gz file: \'%s\'\n",tmp2);
+    ret->bgzf_gls = strdup(tmp2);
+    BGZF *tmpfp = NULL;
+    tmpfp = bgzf_open(ret->bgzf_gls,"r");
+    if(tmpfp)
+        my_bgzf_seek(tmpfp,8,SEEK_SET);
+    if(tmpfp && ret->version!=psmcversion(tmp2)){
+        fprintf(stderr,"\t-> Problem with mismatch of version of %s vs %s %d vs %d\n",fname,tmp2,ret->version,psmcversion(tmp2));
+        exit(0);
+    }
+    bgzf_close(tmpfp);
+    tmpfp=NULL;
 
-        snprintf(filepath_gz, strlen(fname) + 100, "%spos.gz", filepath_without_idx);
-        fprintf(stderr, "\t-> Assuming .psmc.pos.gz: \'%s\'\n", filepath_gz);
-        ret->bgzf_pos = strdup(filepath_gz);
-        tmpfp = bgzf_open(ret->bgzf_pos, "r");
-        if (tmpfp)
-            my_bgzf_seek(tmpfp, 8, SEEK_SET);
-        if (tmpfp && ret->version != psmcversion(filepath_gz)) {
-            fprintf(stderr, "Problem with mismatch of version of %s vs %s\n", fname, filepath_gz);
-            exit(0);
-        }
-        bgzf_close(tmpfp);
-        free(filepath_without_idx);
-        free(filepath_gz);
+    snprintf(tmp2,strlen(fname)+100,"%spos.gz",tmp);
+    fprintf(stderr,"\t-> Assuming .psmc.pos.gz: \'%s\'\n",tmp2);
+    ret->bgzf_pos = strdup(tmp2);
+    tmpfp = bgzf_open(ret->bgzf_pos,"r");
+    if(tmpfp)
+        my_bgzf_seek(tmpfp,8,SEEK_SET);
+    if(tmpfp&& ret->version!=psmcversion(tmp2)){
+        fprintf(stderr,"Problem with mismatch of version of %s vs %s\n",fname,tmp2);
+        exit(0);
+    }
+    bgzf_close(tmpfp);
+
+    free(tmp);free(tmp2);
     return ret;
 }
-
 
 BGZF *bgzf_open_seek(char *fname,int64_t offs){
   BGZF *ret = NULL;

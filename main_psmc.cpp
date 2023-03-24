@@ -265,82 +265,80 @@ args * getArgs(int argc,char **argv,int dontprint) {
      p->init_theta = numerical_params["-theta"];
  */
     args *p = new args;
-    p->dospline =0;
-    p->chooseChr=NULL;
-    p->start=p->stop=-1;
-    p->maxIter=1e2;
-    p->tole=1e-6;
-    p->nSites =0;
+    p->dospline = 0;
+    p->chooseChr = NULL;
+    p->start = p->stop = -1;
+    p->maxIter = 1e2;
+    p->tole = 1e-6;
+    p->nSites = 0;
     p->fname = NULL;
     p->onlyOnce = 0;
-    p->seed =1;
+    p->seed = 1;
     p->blocksize = 100;//default 100bp
-    p->par =(psmc_par*) calloc(1,sizeof(psmc_par));
+    p->par = (psmc_par *) calloc(1, sizeof(psmc_par));
     p->RD = -1;
     p->nChr = -1;
-    p->nThreads =1;
-    p->doLinear =0;
-    p->psmc_infile=NULL;
-    p->init =p->init_theta=p->init_rho= p->init_max_t=-1;
+    p->nThreads = 1;
+    p->doLinear = 0;
+    p->psmc_infile = NULL;
+    p->init = p->init_theta = p->init_rho = p->init_max_t = -1;
     p->init_max_t = 23.861429;
     p->init_rho = 0.005367;
     p->init_theta = 0.000235;
     p->msstr = NULL;
 
-    if(argc==0)
+    if (argc == 0)
         return p;
 
-    while(*argv){
+    while (*argv) {
         //    fprintf(stderr,"%s\n",*argv);
-        if(!strcasecmp(*argv,"-tole"))
+        if (!strcasecmp(*argv, "-tole"))
             p->tole = atof(*(++argv));
-        else  if(!strcasecmp(*argv,"-maxIter"))
+        else if (!strcasecmp(*argv, "-maxIter"))
             p->maxIter = atoi(*(++argv));
-        else  if(!strcasecmp(*argv,"-winSize"))
+        else if (!strcasecmp(*argv, "-winSize"))
             p->blocksize = atoi(*(++argv));
-        else  if(!strcasecmp(*argv,"-RD"))
+        else if (!strcasecmp(*argv, "-RD"))
             p->RD = atoi(*(++argv));
-        else  if(!strcasecmp(*argv,"-nThreads"))
+        else if (!strcasecmp(*argv, "-nThreads"))
             p->nThreads = atoi(*(++argv));
-        else  if(!strcasecmp(*argv,"-dospline"))
+        else if (!strcasecmp(*argv, "-dospline"))
             p->dospline = atoi(*(++argv));
-        else  if(!strcasecmp(*argv,"-nIter"))
+        else if (!strcasecmp(*argv, "-nIter"))
             p->nIter = atoi(*(++argv));
-        else  if(!strcasecmp(*argv,"-p"))
-            p->par->pattern =  strdup(*(++argv));
-        else  if(!strcasecmp(*argv,"-ms"))
-            p->msstr =  strdup(*(++argv));
-        else  if(!strcasecmp(*argv,"-nSites"))
+        else if (!strcasecmp(*argv, "-p"))
+            p->par->pattern = strdup(*(++argv));
+        else if (!strcasecmp(*argv, "-ms"))
+            p->msstr = strdup(*(++argv));
+        else if (!strcasecmp(*argv, "-nSites"))
             p->nSites = atol(*(++argv));
-        else  if(!strcasecmp(*argv,"-seed"))
+        else if (!strcasecmp(*argv, "-seed"))
             p->seed = atol(*(++argv));
-        else  if(!strcasecmp(*argv,"-infile"))
+        else if (!strcasecmp(*argv, "-infile"))
             p->psmc_infile = strdup(*++argv);
-        else  if(!strcasecmp(*argv,"-init"))
+        else if (!strcasecmp(*argv, "-init"))
             p->init = atof(*++argv);
-        else  if(!strcasecmp(*argv,"-theta"))
+        else if (!strcasecmp(*argv, "-theta"))
             p->init_theta = atof(*++argv);
-        else  if(!strcasecmp(*argv,"-rho"))
+        else if (!strcasecmp(*argv, "-rho"))
             p->init_rho = atof(*++argv);
-        else  if(!strcasecmp(*argv,"-max_t"))
+        else if (!strcasecmp(*argv, "-max_t"))
             p->init_max_t = atof(*++argv);
-        else  if(!strcasecmp(*argv,"-nChr"))
+        else if (!strcasecmp(*argv, "-nChr"))
             p->nChr = atoi(*++argv);
-        else  if(!strcasecmp(*argv,"-doLinear")){
+        else if (!strcasecmp(*argv, "-doLinear")) {
             p->doLinear = atoi(*++argv);
-        }else  if(!strcasecmp(*argv,"-r")){
-            p->chooseChr = get_region(*(++argv),p->start,p->stop);
-            if(!p->chooseChr)
+        } else if (!strcasecmp(*argv, "-r")) {
+            p->chooseChr = get_region(*(++argv), p->start, p->stop);
+            if (!p->chooseChr)
                 return NULL;
-        }
-        else{
+        } else {
 
             p->fname = *argv;
 
         }
         argv++;
     }
-
     nThreads = p->nThreads;
     p->perc = perpsmc_init(p->fname, p->nChr);
     if (p->seed == 0)

@@ -33,7 +33,6 @@ typedef struct {
   double tole;
   perpsmc * perc;
   char *fname;
-  char *vcfname;
   int onlyOnce;
   long seed;//<-seed=-1 old version;seed=0 means time; otherwise it will be used as seed
   int blocksize; //in bp
