@@ -204,64 +204,84 @@ BGZF *bgzf_open_seek(char *fname,int64_t offs){
 
 //this functions returns the emissions
 rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
-  rawdata ret;
-  assert(chr!=NULL);
-  
-  myMap::iterator it = pp->mm.find(chr);
-  if(it==pp->mm.end()){
-    fprintf(stderr,"\t-> [%s] Problem finding chr: \'%s\'\n",__FUNCTION__,chr);
-    exit(0);
-  }
+    rawdata ret;
+    assert(chr!=NULL);
 
-  ret.pos = new int[it->second.nSites];
-  ret.len = it->second.nSites;
-  ret.gls = new double[it->second.nSites];
-  double *tmpgls = new double[2*it->second.nSites];
+    myMap::iterator it = pp->mm.find(chr);
+    if(it==pp->mm.end()){
+        fprintf(stderr,"\t-> [%s] Problem finding chr: \'%s\'\n",__FUNCTION__,chr);
+        exit(0);
+    }
 
-  if(pp->version==1) { 
-    BGZF* bgzf_gls =bgzf_open_seek(pp->bgzf_gls,it->second.saf);
-    BGZF* bgzf_pos =bgzf_open_seek(pp->bgzf_pos,it->second.pos);
+    ret.pos = new int[it->second.nSites];
+    ret.len = it->second.nSites;
+    ret.gls = new double[it->second.nSites];
+    double *tmpgls = new double[2*it->second.nSites];
 
-    my_bgzf_read(bgzf_pos,ret.pos,sizeof(int)*it->second.nSites);
-    my_bgzf_read(bgzf_gls,tmpgls,2*sizeof(double)*it->second.nSites);
+    if(pp->version==1) {
+        BGZF* bgzf_gls =bgzf_open_seek(pp->bgzf_gls,it->second.saf);
+        BGZF* bgzf_pos =bgzf_open_seek(pp->bgzf_pos,it->second.pos);
 
-    for(int i=0;i<it->second.nSites;i++) {
-        ret.gls[i] = log(0);
-        if (tmpgls[2 * i] != tmpgls[2 * i + 1]) {
-            double mmax = std::max(tmpgls[2 * i], tmpgls[2 * i + 1]);
-            double val = std::min(tmpgls[2 * i], tmpgls[2 * i + 1]) - mmax;
+        my_bgzf_read(bgzf_pos,ret.pos,sizeof(int)*it->second.nSites);
+        my_bgzf_read(bgzf_gls,tmpgls,2*sizeof(double)*it->second.nSites);
 
-            ret.gls[i] = val;
-            if (tmpgls[2 * i] < tmpgls[2 * i + 1])
-                ret.gls[i] = -ret.gls[i];
+        for(int i=0;i<it->second.nSites;i++){
+            ret.gls[i] = log(0);
+            if(tmpgls[2*i]!=tmpgls[2*i+1]){
+                double mmax = std::max(tmpgls[2*i],tmpgls[2*i+1]);
+                double val = std::min(tmpgls[2*i],tmpgls[2*i+1]) - mmax;
 
-            //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
+                ret.gls[i] = val;
+                if(tmpgls[2*i]<tmpgls[2*i+1])
+                    ret.gls[i] = -ret.gls[i];
 
+                //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
+
+            }
         }
-    }
-    delete [] tmpgls;
-    bgzf_close(bgzf_gls);
-    bgzf_close(bgzf_pos);
-  }else{
-    int asdf = it->second.nSites;
-    char *tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);
-    for(int i=0;i<it->second.nSites;i++){
-      ret.pos[i] = i*blockSize;
-      //important relates to problems with divide by zero in compuation of  backward probablity
-      //K=het
-      if(tmp[i]=='K')
-	ret.gls[i] = 500.0;// 0;//het
-      else
-	ret.gls[i] = -500.0;//;//hom
-      
-      //ok let me explain. negative means homozygotic and postive means heteroeo. The otherone is always 0.
-      
-      //       fprintf(stderr,"%c\n",tmp[i]);
-    }
-    free(tmp);
-    
+        delete [] tmpgls;
+        bgzf_close(bgzf_gls);
+        bgzf_close(bgzf_pos);
+    }else{
+        int asdf = it->second.nSites;
+        char *tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);
+        for(int i=0;i<it->second.nSites;i++){
+            ret.pos[i] = i*blockSize;
+            //important relates to problems with divide by zero in compuation of  backward probablity
+            //K=het
+            if(tmp[i]=='K')
+                ret.gls[i] = 500.0;// 0;//het
+            else
+                ret.gls[i] = -500.0;//;//hom
 
-  }
+            //ok let me explain. negative means homozygotic and postive means heteroeo. The otherone is always 0.
+
+            //       fprintf(stderr,"%c\n",tmp[i]);
+        }
+        free(tmp);
+
+
+    }
+
+    ret.firstp=0;
+    ret.lastp=it->second.nSites;
+
+#if 1 //the code below should be readded if we ever want to run on specific specified regions
+    ret.firstp=0;
+    if(start!=-1)
+        while(ret.firstp<it->second.nSites&&ret.pos[ret.firstp]<start)
+            ret.firstp++;
+
+    ret.lastp = it->second.nSites;
+    if(stop!=-1&&stop<=ret.pos[ret.lastp-1]){
+        ret.lastp=ret.firstp;
+        while(ret.pos[ret.lastp]<stop)
+            ret.lastp++;
+    }
+#endif
+
+    return ret;
+}
   
   ret.firstp=0;
   ret.lastp=it->second.nSites;
