@@ -282,26 +282,7 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
 
     return ret;
 }
-  
-  ret.firstp=0;
-  ret.lastp=it->second.nSites;
 
-#if 1 //the code below should be readded if we ever want to run on specific specified regions
-  ret.firstp=0;
-  if(start!=-1)
-    while(ret.firstp<it->second.nSites&&ret.pos[ret.firstp]<start)
-      ret.firstp++;
-  
-  ret.lastp = it->second.nSites;
-  if(stop!=-1&&stop<=ret.pos[ret.lastp-1]){
-    ret.lastp=ret.firstp;
-    while(ret.pos[ret.lastp]<stop)
-      ret.lastp++;
-  }
-#endif
-  
-  return ret;
-}
 
 std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     std::map<const char*,rawdata> vcf_data;

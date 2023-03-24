@@ -457,7 +457,6 @@ int psmc_wrapper(args *pars,int blocksize) {
         pars->par->par_map = psmc_parse_pattern(pars->par->pattern, &pars->par->n_free, &pars->par->n);
     }
 
-
     fprintf(stderr, "\t-> we are in file: %s function: %s line:%d blocksize:%d\n", __FILE__, __FUNCTION__, __LINE__,
             blocksize);
 
@@ -527,17 +526,16 @@ int psmc_wrapper(args *pars,int blocksize) {
 
 #if 0
     for(int i=0;i<tk_l;i++)
-      fprintf(stderr,"psmc_wrapper: (tk,epsize)[%d]:(%f,%f)\n",i,tk[i],epsize[i]);
-    exit(0);
+fprintf(stderr,"psmc_wrapper: (tk,epsize)[%d]:(%f,%f)\n",i,tk[i],epsize[i]);
+exit(0);
 #endif
     fprintf(stderr, "\t-> tk_l in psmc_wrapper pars->par->n+1 tk_l:%d p->times:%p\n", tk_l, pars->par->times);
-    //int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
-    int nobs=1;
+    int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
     fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
     objs = new fastPSMC *[nobs];
     ops = new oPars[nobs];
     timer datareader_timer = starttimer();
-    if(pars->perc->version!=2) {
+    if (pars->perc->version != 2) {
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
                                    -1,
@@ -556,11 +554,10 @@ int psmc_wrapper(args *pars,int blocksize) {
             if (pars->chooseChr != NULL)
                 break;
         }
-    }
-    else{
-        fprintf(stderr,"going to read vcf\n");
-        std::map<const char*,rawdata> data = get_vcf_data(pars->perc,-1,-1);
-        for(std::map<const char*,rawdata>::iterator it = data.begin();it != data.end();it++){
+    } else {
+        fprintf(stderr, "\tgoing to read vcf\n");
+        std::map<const char *, rawdata> data = get_vcf_data(pars->perc, -1, -1);
+        for (std::map<const char *, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
 
@@ -568,7 +565,7 @@ int psmc_wrapper(args *pars,int blocksize) {
             obj->allocate(tk_l);
             obj->gls = it->second.gls;
 
-            fprintf(stderr,"transer:%p\n",obj[0].trans);
+            fprintf(stderr, "transer:%p\n", obj[0].trans);
             delete[] it->second.pos;
             if (pars->chooseChr != NULL)
                 break;
