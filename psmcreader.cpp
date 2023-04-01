@@ -100,95 +100,104 @@ perpsmc * perpsmc_init(char *fname,int nChr){
     int at=0;//incrementer for breaking out of filereading if -nChr has been supplied
 
     //loop for fasta
-    if(ret->version!=1){
-        fprintf(stderr,"\t-> Looks like you are trying to use a version of PSMC that does not exists, assuming its a fastafile\n");
-        fclose(fp);
-        fp=NULL;
-        ret->pf = perFasta_init(fname);
-        for(int i=0;i<faidx_nseq(ret->pf->fai);i++){
-            if(nChr!=-1&&at++>=nChr)
+    if(ret->version!=2) {
+        if (ret->version != 1) {
+            fprintf(stderr,
+                    "\t-> Looks like you are trying to use a version of PSMC that does not exists, assuming its a fastafile\n");
+            fclose(fp);
+            fp = NULL;
+            ret->pf = perFasta_init(fname);
+            for (int i = 0; i < faidx_nseq(ret->pf->fai); i++) {
+                if (nChr != -1 && at++ >= nChr)
+                    break;
+                char *chr = strdup(faidx_iseq(ret->pf->fai, i));
+                // fprintf(stderr,"\t-> [%s] %d) chr: %s\n",__FUNCTION__,i,chr);
+                datum d;
+                d.nSites = faidx_seq_len(ret->pf->fai, chr);
+                ret->nSites += d.nSites;
+                d.pos = d.saf = 0;
+                myMap::iterator it = ret->mm.find(chr);
+                if (it == ret->mm.end())
+                    ret->mm[chr] = d;
+                else {
+                    fprintf(stderr,
+                            "Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",
+                            chr);
+                    exit(0);
+                }
+            }
+            return ret;
+        }
+
+        //loop for gl
+        while (fread(&clen, sizeof(size_t), 1, fp)) {
+            if (nChr != -1 && at++ >= nChr)
                 break;
-            char *chr = strdup(faidx_iseq(ret->pf->fai,i));
-            // fprintf(stderr,"\t-> [%s] %d) chr: %s\n",__FUNCTION__,i,chr);
+            char *chr = (char *) malloc(clen + 1);
+            assert(clen == fread(chr, 1, clen, fp));
+            chr[clen] = '\0';
+
             datum d;
-            d.nSites = faidx_seq_len(ret->pf->fai,chr);
+            if (1 != fread(&d.nSites, sizeof(size_t), 1, fp)) {
+                fprintf(stderr, "[%s.%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, fname);
+                exit(0);
+            }
             ret->nSites += d.nSites;
-            d.pos=d.saf=0;
+            if (1 != fread(&d.pos, sizeof(int64_t), 1, fp)) {
+                fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, fname);
+                exit(0);
+            }
+            if (1 != fread(&d.saf, sizeof(int64_t), 1, fp)) {
+                fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, fname);
+                exit(0);
+            }
+
             myMap::iterator it = ret->mm.find(chr);
-            if(it==ret->mm.end())
-                ret->mm[chr] =d ;
-            else{
-                fprintf(stderr,"Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",chr);
+            if (it == ret->mm.end())
+                ret->mm[chr] = d;
+            else {
+                fprintf(stderr,
+                        "Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",
+                        chr);
                 exit(0);
             }
         }
-        return ret;
-    }
+        fclose(fp);
+        char *tmp = (char *) calloc(strlen(fname) + 100, 1);//that should do it
+        tmp = strncpy(tmp, fname, strlen(fname) - 3);
+        //  fprintf(stderr,"tmp:%s\n",tmp);
 
-    //loop for gl
-    while(fread(&clen,sizeof(size_t),1,fp)){
-        if(nChr!=-1&&at++>=nChr)
-            break;
-        char *chr = (char*)malloc(clen+1);
-        assert(clen==fread(chr,1,clen,fp));
-        chr[clen] = '\0';
-
-        datum d;
-        if(1!=fread(&d.nSites,sizeof(size_t),1,fp)){
-            fprintf(stderr,"[%s.%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
+        char *tmp2 = (char *) calloc(strlen(fname) + 100, 1);//that should do it
+        snprintf(tmp2, strlen(fname) + 100, "%sgz", tmp);
+        fprintf(stderr, "\t-> Assuming .psmc.gz file: \'%s\'\n", tmp2);
+        ret->bgzf_gls = strdup(tmp2);
+        BGZF *tmpfp = NULL;
+        tmpfp = bgzf_open(ret->bgzf_gls, "r");
+        if (tmpfp)
+            my_bgzf_seek(tmpfp, 8, SEEK_SET);
+        if (tmpfp && ret->version != psmcversion(tmp2)) {
+            fprintf(stderr, "\t-> Problem with mismatch of version of %s vs %s %d vs %d\n", fname, tmp2, ret->version,
+                    psmcversion(tmp2));
             exit(0);
         }
-        ret->nSites += d.nSites;
-        if(1!=fread(&d.pos,sizeof(int64_t),1,fp)){
-            fprintf(stderr,"[%s->%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
+        bgzf_close(tmpfp);
+        tmpfp = NULL;
+
+        snprintf(tmp2, strlen(fname) + 100, "%spos.gz", tmp);
+        fprintf(stderr, "\t-> Assuming .psmc.pos.gz: \'%s\'\n", tmp2);
+        ret->bgzf_pos = strdup(tmp2);
+        tmpfp = bgzf_open(ret->bgzf_pos, "r");
+        if (tmpfp)
+            my_bgzf_seek(tmpfp, 8, SEEK_SET);
+        if (tmpfp && ret->version != psmcversion(tmp2)) {
+            fprintf(stderr, "Problem with mismatch of version of %s vs %s\n", fname, tmp2);
             exit(0);
         }
-        if(1!=fread(&d.saf,sizeof(int64_t),1,fp)){
-            fprintf(stderr,"[%s->%s():%d] Problem reading data: %s \n",__FILE__,__FUNCTION__,__LINE__,fname);
-            exit(0);
-        }
+        bgzf_close(tmpfp);
 
-        myMap::iterator it = ret->mm.find(chr);
-        if(it==ret->mm.end())
-            ret->mm[chr] =d ;
-        else{
-            fprintf(stderr,"Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",chr);
-            exit(0);
-        }
+        free(tmp);
+        free(tmp2);
     }
-    fclose(fp);
-    char *tmp =(char*)calloc(strlen(fname)+100,1);//that should do it
-    tmp=strncpy(tmp,fname,strlen(fname)-3);
-    //  fprintf(stderr,"tmp:%s\n",tmp);
-
-    char *tmp2 = (char*)calloc(strlen(fname)+100,1);//that should do it
-    snprintf(tmp2,strlen(fname)+100,"%sgz",tmp);
-    fprintf(stderr,"\t-> Assuming .psmc.gz file: \'%s\'\n",tmp2);
-    ret->bgzf_gls = strdup(tmp2);
-    BGZF *tmpfp = NULL;
-    tmpfp = bgzf_open(ret->bgzf_gls,"r");
-    if(tmpfp)
-        my_bgzf_seek(tmpfp,8,SEEK_SET);
-    if(tmpfp && ret->version!=psmcversion(tmp2)){
-        fprintf(stderr,"\t-> Problem with mismatch of version of %s vs %s %d vs %d\n",fname,tmp2,ret->version,psmcversion(tmp2));
-        exit(0);
-    }
-    bgzf_close(tmpfp);
-    tmpfp=NULL;
-
-    snprintf(tmp2,strlen(fname)+100,"%spos.gz",tmp);
-    fprintf(stderr,"\t-> Assuming .psmc.pos.gz: \'%s\'\n",tmp2);
-    ret->bgzf_pos = strdup(tmp2);
-    tmpfp = bgzf_open(ret->bgzf_pos,"r");
-    if(tmpfp)
-        my_bgzf_seek(tmpfp,8,SEEK_SET);
-    if(tmpfp&& ret->version!=psmcversion(tmp2)){
-        fprintf(stderr,"Problem with mismatch of version of %s vs %s\n",fname,tmp2);
-        exit(0);
-    }
-    bgzf_close(tmpfp);
-
-    free(tmp);free(tmp2);
     return ret;
 }
 
