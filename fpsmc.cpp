@@ -555,7 +555,7 @@ exit(0);
                 break;
         }
     } else {
-        fprintf(stderr, "\tgoing to read vcf\n");
+        fprintf(stderr, "\t->Going to read vcf\n");
         std::map<const char *, rawdata> data = get_vcf_data(pars->perc, -1, -1);
         for (std::map<const char *, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
             fastPSMC *obj = objs[nChr++] = new fastPSMC;

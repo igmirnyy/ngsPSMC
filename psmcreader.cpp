@@ -348,8 +348,8 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
             likelihoods_vector.push_back(likelihood);
         }
         else {
-            positions_vector.reserve(positions_vector.capacity() + 10000);
-            likelihoods_vector.reserve(likelihoods_vector.capacity() + 10000);
+            positions_vector.reserve(positions_vector.capacity() + 10000000);
+            likelihoods_vector.reserve(likelihoods_vector.capacity() + 10000000);
             positions_vector.push_back(record->pos + 1);
             likelihoods_vector.push_back(likelihood);
         }
@@ -364,8 +364,8 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         memcpy(output_rawdata.pos, positions[it->first].data(),positions[it->first].size());
         positions[it->first].clear();
         output_rawdata.gls= new double[likelihoods[it->first].size()];
-        likelihoods[it->first].clear();
         memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size());
+        likelihoods[it->first].clear();
         output_rawdata.len = positions[it->first].size();
 #if 1 //the code below should be read if we ever want to run on specific specified regions
         output_rawdata.firstp=0;
@@ -382,6 +382,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 #endif
         vcf_data[it->first]=output_rawdata;
     }
-    fprintf(stderr,"vcf successfully read\n");
+    fprintf(stderr,"\t-> VCF file successfully read\n");
     return vcf_data;
 }
