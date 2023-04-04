@@ -557,6 +557,10 @@ exit(0);
     } else {
         fprintf(stderr, "\t->Going to read vcf\n");
         std::map<const char *, rawdata> data = get_vcf_data(pars->perc, -1, -1);
+        int nobs = pars->chooseChr ? 1 : data.size();
+        fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
+        objs = new fastPSMC *[nobs];
+        ops = new oPars[nobs];
         for (std::map<const char *, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
