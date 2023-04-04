@@ -530,12 +530,12 @@ fprintf(stderr,"psmc_wrapper: (tk,epsize)[%d]:(%f,%f)\n",i,tk[i],epsize[i]);
 exit(0);
 #endif
     fprintf(stderr, "\t-> tk_l in psmc_wrapper pars->par->n+1 tk_l:%d p->times:%p\n", tk_l, pars->par->times);
-    int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
-    fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
-    objs = new fastPSMC *[nobs];
-    ops = new oPars[nobs];
     timer datareader_timer = starttimer();
     if (pars->perc->version != 2) {
+        int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
+        fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
+        objs = new fastPSMC *[nobs];
+        ops = new oPars[nobs];
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
                                    -1,
