@@ -291,7 +291,7 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
 }
 
 double pl_to_gl(double pl){
-    return 1 - exp(log(10)*-pl/10);
+    return exp(log(10)*-pl/10);
 }
 double gl_to_pl(double gl){
     return -10*log10(1-gl);
