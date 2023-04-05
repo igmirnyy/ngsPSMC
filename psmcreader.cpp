@@ -290,6 +290,12 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
     return ret;
 }
 
+double pl_to_gl(double pl){
+    return 1 - exp(log(10)*-pl/10);
+}
+double gl_to_pl(double gl){
+    return -10*log10(1-gl);
+}
 
 std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     std::map<const char*,rawdata> vcf_data;
@@ -315,21 +321,21 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         //Counting PL scores
         switch(record->n_allele){
             case 2:
-                homo_pl = ploidy[0]+ploidy[2];
-                hetero_pl = ploidy[1];
+                homo_pl = pl_to_gl(ploidy[0])+ pl_to_gl(ploidy[2]);
+                hetero_pl = pl_to_gl(ploidy[1]);
                 break;
             case 3:
-                homo_pl = ploidy[0] + ploidy[3] + ploidy[5];
-                hetero_pl = ploidy[1] + ploidy[2] + ploidy[4];
+                homo_pl = pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]);
+                hetero_pl = pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[4]);
                 break;
             case 4:
-                homo_pl = ploidy[0] + ploidy[4] + ploidy[7] + ploidy[9];
-                hetero_pl = ploidy[1] + ploidy[2] + ploidy[3] + ploidy[5] + ploidy[6] + ploidy[8];
+                homo_pl = pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[4]) + pl_to_gl(ploidy[7]) +  pl_to_gl(ploidy[9]);
+                hetero_pl = pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]) +  pl_to_gl(ploidy[6]) +  pl_to_gl(ploidy[8]);
             default:
                 break;
         }
-        homo_pl/=4;
-        hetero_pl/=6;
+        homo_pl= gl_to_pl(homo_pl/4);
+        hetero_pl = gl_to_pl(hetero_pl/6);
         if (homo_pl !=hetero_pl) {
             double mmax = std::max(homo_pl,hetero_pl);
             double val = std::min(homo_pl,hetero_pl) - mmax;
