@@ -294,7 +294,7 @@ double pl_to_gl(double pl){
     return exp(log(10)*-pl/10);
 }
 double gl_to_pl(double gl){
-    return -10*log10(1-gl);
+    return -10*log10(gl);
 }
 
 std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
