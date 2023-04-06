@@ -368,18 +368,20 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     for(std::map<const char*, std::vector<int > >::iterator it = positions.begin();it!=positions.end();it++){
         output_rawdata.pos= new int[positions[it->first].size()];
         memcpy(output_rawdata.pos, positions[it->first].data(),positions[it->first].size());
+        output_rawdata.len = positions[it->first].size();
         positions[it->first].clear();
         output_rawdata.gls= new double[likelihoods[it->first].size()];
         memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size());
         likelihoods[it->first].clear();
-        output_rawdata.len = positions[it->first].size();
-#if 1 //the code below should be read if we ever want to run on specific specified regions
+
         output_rawdata.firstp=0;
+        output_rawdata.lastp = output_rawdata.len;
+#if 0 //the code below should be read if we ever want to run on specific specified regions
         if(start!=-1)
             while(output_rawdata.firstp<output_rawdata.len&&output_rawdata.pos[output_rawdata.firstp]<start)
                 output_rawdata.firstp++;
 
-        output_rawdata.lastp = output_rawdata.len;
+
         if(stop!=-1&&stop<=output_rawdata.pos[output_rawdata.lastp-1]){
             output_rawdata.lastp=output_rawdata.firstp;
             while(output_rawdata.pos[output_rawdata.lastp]<stop)
