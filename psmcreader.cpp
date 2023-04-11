@@ -293,8 +293,8 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
 double pl_to_gl(double pl){
     return exp(log(10)*-pl/10);
 }
-double gl_to_pl(double gl){
-    return -10*log10(gl);
+double gl_to_loggl(double gl){
+    return log10(gl);
 }
 
 std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
@@ -307,6 +307,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     bcf_hdr_t* header = bcf_hdr_read(input_file);
     bcf1_t *record = bcf_init();
     int i = 0;
+    FILE* f = fopen("output.txt","w");
     //Reading data from vcf file
     while(bcf_read(input_file, header, record) == 0) {
         bcf_unpack(record,BCF_UN_STR);
@@ -334,8 +335,8 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
             default:
                 break;
         }
-        homo_pl= gl_to_pl(homo_pl/4);
-        hetero_pl = gl_to_pl(hetero_pl/6);
+        homo_pl= gl_to_loggl(homo_pl/4);
+        hetero_pl = gl_to_loggl(hetero_pl/6);
         if (homo_pl !=hetero_pl) {
             double mmax = std::max(homo_pl,hetero_pl);
             double val = std::min(homo_pl,hetero_pl) - mmax;
@@ -346,6 +347,8 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 
             //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
         }
+        fprintf(f,"%lld %lf\n", record->pos + 1, likelihood);
+
         //Storing positions and likelihoods
         std::vector<int> & positions_vector = positions[bcf_hdr_id2name(header,record->rid)];
         std::vector<double>  & likelihoods_vector = likelihoods[bcf_hdr_id2name(header,record->rid)];
@@ -390,6 +393,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 #endif
         vcf_data[it->first]=output_rawdata;
     }
+    fclose(f);
     fprintf(stderr,"\t-> VCF file successfully read\n");
     return vcf_data;
 }

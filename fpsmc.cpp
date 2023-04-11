@@ -361,7 +361,7 @@ void main_analysis_make_hmm(double *tk,int tk_l,double *epsize,double theta,doub
 //tk_l is dimension of transistionsspace ndim is size of dimension
 //tk is tk_l long, epsize is tk_l long
 void main_analysis(double *tk,int tk_l,double *epsize,double theta,double rho,char *pattern,int ndim,int nIter,double maxt){
-  
+
   int at_it=0;
   extern int SIG_COND;
   fprintf(stderr,"----------------------------------------\n");
@@ -555,8 +555,9 @@ exit(0);
                 break;
         }
     } else {
-        fprintf(stderr, "\t->Going to read vcf\n");
+        fprintf(stderr, "\t-> Going to read vcf\n");
         std::map<const char *, rawdata> data = get_vcf_data(pars->perc, -1, -1);
+        exit(1);
         int nobs = pars->chooseChr ? 1 : data.size();
         fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
         objs = new fastPSMC *[nobs];
@@ -564,12 +565,10 @@ exit(0);
         for (std::map<const char *, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
-
             obj->setWindows(it->second.pos, it->second.lastp, pars->blocksize);
             obj->allocate(tk_l);
             obj->gls = it->second.gls;
 
-            fprintf(stderr, "transer:%p\n", obj[0].trans);
             delete[] it->second.pos;
             if (pars->chooseChr != NULL)
                 break;
