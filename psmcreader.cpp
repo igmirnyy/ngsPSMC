@@ -307,7 +307,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     bcf_hdr_t* header = bcf_hdr_read(input_file);
     bcf1_t *record = bcf_init();
     int i = 0;
-    FILE* f = fopen("output.txt","w");
     //Reading data from vcf file
     while(bcf_read(input_file, header, record) == 0) {
         bcf_unpack(record,BCF_UN_STR);
@@ -347,7 +346,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 
             //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
         }
-        fprintf(f,"%lld %lf\n", record->pos + 1, likelihood);
 
         //Storing positions and likelihoods
         std::vector<int> & positions_vector = positions[bcf_hdr_id2name(header,record->rid)];
@@ -393,7 +391,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 #endif
         vcf_data[it->first]=output_rawdata;
     }
-    fclose(f);
     fprintf(stderr,"\t-> VCF file successfully read\n");
     return vcf_data;
 }
