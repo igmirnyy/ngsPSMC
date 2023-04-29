@@ -231,9 +231,10 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
 
         my_bgzf_read(bgzf_pos,ret.pos,sizeof(int)*it->second.nSites);
         my_bgzf_read(bgzf_gls,tmpgls,2*sizeof(double)*it->second.nSites);
-
+        FILE* fout=fopen("glPSMC.txt","w");
         for(int i=0;i<it->second.nSites;i++){
             ret.gls[i] = log(0);
+            fprintf(fout,"%lf %lf\n",tmpgls[2*i], tmpgls[2*i+1]);
             if(tmpgls[2*i]!=tmpgls[2*i+1]){
                 double mmax = std::max(tmpgls[2*i],tmpgls[2*i+1]);
                 double val = std::min(tmpgls[2*i],tmpgls[2*i+1]) - mmax;
@@ -246,6 +247,7 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
 
             }
         }
+        fclose(fout);
         delete [] tmpgls;
         bgzf_close(bgzf_gls);
         bgzf_close(bgzf_pos);
@@ -286,7 +288,7 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
             ret.lastp++;
     }
 #endif
-
+    exit(0);
     return ret;
 }
 
@@ -308,6 +310,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     bcf1_t *record = bcf_init();
     int i = 0;
     //Reading data from vcf file
+    FILE* fout=fopen("glVCF.txt","w");
     while(bcf_read(input_file, header, record) == 0) {
         bcf_unpack(record,BCF_UN_STR);
         //Skipping INDELS and N in REF
@@ -334,6 +337,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
             default:
                 break;
         }
+        fprintf(fout,"%lf %lf\n",homo_pl/4, hetero_pl/6);
         homo_pl= gl_to_loggl(homo_pl/4);
         hetero_pl = gl_to_loggl(hetero_pl/6);
         if (homo_pl !=hetero_pl) {
@@ -361,6 +365,8 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
             likelihoods_vector.push_back(likelihood);
         }
     }
+    fclose(fout);
+    exit(0);
     bcf_hdr_destroy(header);
     bcf_destroy(record);
     bcf_close(input_file);
