@@ -234,7 +234,7 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
         FILE* fout=fopen("glPSMC.txt","w");
         for(int i=0;i<it->second.nSites;i++){
             ret.gls[i] = log(0);
-            fprintf(fout,"%lf %lf\n",tmpgls[2*i], tmpgls[2*i+1]);
+            fprintf(fout,"%d %lf %lf\n",ret.pos[i], tmpgls[2*i], tmpgls[2*i+1]);
             if(tmpgls[2*i]!=tmpgls[2*i+1]){
                 double mmax = std::max(tmpgls[2*i],tmpgls[2*i+1]);
                 double val = std::min(tmpgls[2*i],tmpgls[2*i+1]) - mmax;
@@ -326,18 +326,21 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
             case 2:
                 homo_pl = pl_to_gl(ploidy[0])+ pl_to_gl(ploidy[2]);
                 hetero_pl = pl_to_gl(ploidy[1]);
+                fprintf(fout,"%lld homo %d %d hetero %d\n",record->pos+1,ploidy[0], ploidy[2], ploidy[1]);
                 break;
             case 3:
                 homo_pl = pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]);
                 hetero_pl = pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[4]);
+                fprintf(fout,"%lld homo %d %d %d hetero %d %d %d\n",record->pos+1,ploidy[0], ploidy[3], ploidy[5], ploidy[1],ploidy[2], ploidy[4]);
                 break;
             case 4:
                 homo_pl = pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[4]) + pl_to_gl(ploidy[7]) +  pl_to_gl(ploidy[9]);
                 hetero_pl = pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]) +  pl_to_gl(ploidy[6]) +  pl_to_gl(ploidy[8]);
+                fprintf(fout,"%lld homo %d %d %d %d hetero %d %d %d %d %d %d\n",record->pos+1,ploidy[0], ploidy[4], ploidy[7], ploidy[9],ploidy[1], ploidy[2], ploidy[3], ploidy[5], ploidy[6], ploidy[8]);
             default:
                 break;
         }
-        fprintf(fout,"%lf %lf\n",homo_pl/4, hetero_pl/6);
+
         homo_pl= gl_to_loggl(homo_pl/4);
         hetero_pl = gl_to_loggl(hetero_pl/6);
         if (homo_pl !=hetero_pl) {
