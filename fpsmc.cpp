@@ -536,12 +536,16 @@ exit(0);
         fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
         objs = new fastPSMC *[nobs];
         ops = new oPars[nobs];
+        FILE* fout = fopen("outfromPSMC.txt","w");
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
                                    -1,
                                    -1);
 
             //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
+            for(int i = 0;i < rd.len;i++){
+                fprintf(fout,"%d %lf\n", rd.pos[i], rd.gls[i]);
+            }
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
 
@@ -553,6 +557,7 @@ exit(0);
             delete[] rd.pos;
             if (pars->chooseChr != NULL)
                 break;
+            fclose(fout);
         }
     } else {
         fprintf(stderr, "\t-> Going to read vcf\n");
@@ -561,7 +566,12 @@ exit(0);
         fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
         objs = new fastPSMC *[nobs];
         ops = new oPars[nobs];
+        FILE* fout = fopen("outfromVCF.txt","w");
         for (std::map<const char *, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
+            fprintf(fout,"%lu %d\n", it->second.lastp, pars->blocksize);
+            for(int i = 0;i < it->second.len;i++){
+                fprintf(fout,"%d %lf\n", it->second.pos[i], it->second.gls[i]);
+            }
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
             obj->setWindows(it->second.pos, it->second.lastp, pars->blocksize);
@@ -572,7 +582,9 @@ exit(0);
             if (pars->chooseChr != NULL)
                 break;
         }
+        fclose(fout);
     }
+    exit(0);
     //stupid hook for allocating //fw bw
     fws_bws = new fw_bw[std::min(nThreads, nChr)];
     for (int i = 0; i < std::min(nThreads, nChr); i++) {
