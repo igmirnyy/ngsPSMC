@@ -285,7 +285,6 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
             ret.lastp++;
     }
 #endif
-    exit(0);
     return ret;
 }
 
