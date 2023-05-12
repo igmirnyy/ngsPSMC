@@ -442,7 +442,7 @@ std::map<const char*,rawdata> get_vcf_data(const char* fname, int start, int sto
             double val = std::min(homo_pl,hetero_pl) - mmax;
 
             likelihood = val;
-            if (homo_pl < hetero_pl)
+            if (hetero_pl < homo_pl)
                 likelihood = -likelihood;
 
             //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
