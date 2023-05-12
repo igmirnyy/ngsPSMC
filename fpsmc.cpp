@@ -545,7 +545,7 @@ exit(0);
                                    -1);
             fprintf(stderr,"rawdata len %lu",rd.len);
             for(int i = 0;i<rd.len;i++){
-                fprintf(fout,"%d psmc %lf vcf %lf\n",rd.pos[i],rd.gls[i], data[it->first].gls[rd.pos[i]-10000]);
+                fprintf(fout,"%d psmc %lf vcf %lf\n",rd.pos[i],rd.gls[i], data["1"].gls[i]);
             }
             //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
             fastPSMC *obj = objs[nChr++] = new fastPSMC;

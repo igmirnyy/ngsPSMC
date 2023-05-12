@@ -412,6 +412,7 @@ std::map<const char*,rawdata> get_vcf_data(const char* fname, int start, int sto
         if(bcf_get_info_flag(header,record,"INDEL",NULL,NULL)==1 || record->d.als[0]=='N') continue;
 
         i++;
+        if(i>1000) break;
         double homo_pl = 0;
         double hetero_pl =0;
         double likelihood;
