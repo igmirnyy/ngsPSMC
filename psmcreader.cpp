@@ -310,7 +310,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         bcf_unpack(record,BCF_UN_STR);
         //Skipping INDELS and N in REF
         if(bcf_get_info_flag(header,record,"INDEL",NULL,NULL)==1 || record->d.als[0]=='N') continue;
-
+        if(i>10000) break;
         i++;
         double homo_pl = 0;
         double hetero_pl =0;
