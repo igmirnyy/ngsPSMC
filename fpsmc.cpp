@@ -536,15 +536,18 @@ exit(0);
         fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
         objs = new fastPSMC *[nobs];
         ops = new oPars[nobs];
+        FILE* fout=fopen("psmcvcfgls.txt","w");
+        std::map<const char *, rawdata> data = get_vcf_data("GenotypeLikelihoods0703.vcf.gz1328219.out", -1, -1);
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
                                    -1,
                                    -1);
-
+            for(int i = 0;i<rd.len;i++){
+                fprintf(fout,"%d psmc %lf vcf %lf\n",rd.pos[i],rd.gls[i], data[it->first].gls[i]);
+            }
             //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
-
             obj->setWindows(rd.pos, rd.lastp, pars->blocksize);
             obj->allocate(tk_l);
             obj->gls = rd.gls;
@@ -554,6 +557,8 @@ exit(0);
             if (pars->chooseChr != NULL)
                 break;
         }
+        fclose(fout);
+        exit(0);
     } else {
         fprintf(stderr, "\t-> Going to read vcf\n");
         std::map<const char *, rawdata> data = get_vcf_data(pars->perc, -1, -1);
