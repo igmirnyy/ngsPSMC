@@ -366,6 +366,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     bcf_close(input_file);
     rawdata output_rawdata;
     //Creating rawdata objects from vectors
+    FILE*fout=fopen("output.txt","w");
     for(std::map<const char*, std::vector<int > >::iterator it = positions.begin();it!=positions.end();it++){
         output_rawdata.pos= new int[positions[it->first].size()];
         memcpy(output_rawdata.pos, positions[it->first].data(),positions[it->first].size());
@@ -374,7 +375,9 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         output_rawdata.gls= new double[likelihoods[it->first].size()];
         memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size());
         likelihoods[it->first].clear();
-
+        for(int j=0;j<output_rawdata.len;j++){
+            fprintf(fout,"%d %lf\n",output_rawdata.pos[i],output_rawdata.gls[i]);
+        }
         output_rawdata.firstp=0;
         output_rawdata.lastp = output_rawdata.len;
 #if 0 //the code below should be read if we ever want to run on specific specified regions
@@ -391,6 +394,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 #endif
         vcf_data[it->first]=output_rawdata;
     }
+    fclose(fout);
     fprintf(stderr,"\t-> VCF file successfully read\n");
     return vcf_data;
 }
