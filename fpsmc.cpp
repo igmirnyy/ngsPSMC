@@ -539,11 +539,13 @@ exit(0);
         FILE* fout=fopen("psmcvcfgls.txt","w");
         std::map<const char *, rawdata> data = get_vcf_data("GenotypeLikelihoods0703.vcf.gz1328219.out", -1, -1);
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
+            fprintf(stderr,"reading chromosome %s", it->first);
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
                                    -1,
                                    -1);
+            fprintf(stderr,"rawdata len %lu",rd.len);
             for(int i = 0;i<rd.len;i++){
-                fprintf(fout,"%d psmc %lf vcf %lf\n",rd.pos[i],rd.gls[i], data[it->first].gls[i]);
+                fprintf(fout,"%d psmc %lf vcf %lf\n",rd.pos[i],rd.gls[i], data[it->first].gls[rd.pos[i]-10000]);
             }
             //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
