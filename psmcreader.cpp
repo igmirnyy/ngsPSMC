@@ -376,7 +376,7 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size());
         likelihoods[it->first].clear();
         for(int j=0;j<output_rawdata.len;j++){
-            fprintf(fout,"%d %lf\n",output_rawdata.pos[i],output_rawdata.gls[i]);
+            fprintf(fout,"%d %lf\n",output_rawdata.pos[j],output_rawdata.gls[j]);
         }
         output_rawdata.firstp=0;
         output_rawdata.lastp = output_rawdata.len;
