@@ -536,17 +536,12 @@ exit(0);
         fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
         objs = new fastPSMC *[nobs];
         ops = new oPars[nobs];
-        FILE* fout=fopen("psmcvcfgls.txt","w");
         std::map<const char *, rawdata> data = get_vcf_data("GenotypeLikelihoods0703.vcf.gz1328219.out", -1, -1);
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
             fprintf(stderr,"reading chromosome %s", it->first);
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
                                    -1,
                                    -1);
-            fprintf(stderr,"rawdata len %lu",rd.len);
-            for(int i = 0;i<rd.len;i++){
-                fprintf(stderr,"%d psmc %lf vcf %lf\n",rd.pos[i],rd.gls[i], data.begin()->second.gls[i]);
-            }
             //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
@@ -559,8 +554,6 @@ exit(0);
             if (pars->chooseChr != NULL)
                 break;
         }
-        fclose(fout);
-        exit(0);
     } else {
         fprintf(stderr, "\t-> Going to read vcf\n");
         std::map<const char *, rawdata> data = get_vcf_data(pars->perc, -1, -1);
@@ -569,9 +562,6 @@ exit(0);
         objs = new fastPSMC *[nobs];
         ops = new oPars[nobs];
         for (std::map<const char *, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
-            for(int i=0; i<it->second.len;i++){
-                fprintf(stderr, "%d %lf",it->second.pos[i],it->second.gls[i]);
-            }
             fastPSMC *obj = objs[nChr++] = new fastPSMC;
             obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
             obj->setWindows(it->second.pos, it->second.lastp, pars->blocksize);
@@ -582,7 +572,6 @@ exit(0);
             if (pars->chooseChr != NULL)
                 break;
         }
-        exit(0);
     }
     //stupid hook for allocating //fw bw
     fws_bws = new fw_bw[std::min(nThreads, nChr)];

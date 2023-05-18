@@ -310,7 +310,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         bcf_unpack(record,BCF_UN_STR);
         //Skipping INDELS and N in REF
         if(bcf_get_info_flag(header,record,"INDEL",NULL,NULL)==1 || record->d.als[0]=='N') continue;
-        if(i>10000) break;
         i++;
         double homo_pl = 0;
         double hetero_pl =0;
@@ -365,7 +364,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     bcf_destroy(record);
     bcf_close(input_file);
     rawdata output_rawdata;
-    FILE*fout=fopen("output.txt","w");
     //Creating rawdata objects from vectors
     for(std::map<const char*, std::vector<int > >::iterator it = positions.begin();it!=positions.end();it++){
         output_rawdata.pos= new int[positions[it->first].size()];
@@ -375,9 +373,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         output_rawdata.gls= new double[likelihoods[it->first].size()];
         memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size()*sizeof(double));
         likelihoods[it->first].clear();
-        for(int j = 0; j<output_rawdata.len;j++){
-            fprintf(fout,"%d %lf\n",output_rawdata.pos[j],output_rawdata.gls[j]);
-        }
         output_rawdata.firstp=0;
         output_rawdata.lastp = output_rawdata.len;
 #if 0 //the code below should be read if we ever want to run on specific specified regions
@@ -394,7 +389,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 #endif
         vcf_data[it->first]=output_rawdata;
     }
-    fclose(fout);
     fprintf(stderr,"\t-> VCF file successfully read\n");
     return vcf_data;
 }
