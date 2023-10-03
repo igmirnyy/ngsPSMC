@@ -291,9 +291,6 @@ rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop){
 double pl_to_gl(double pl){
     return exp(log(10)*-pl/10);
 }
-double gl_to_loggl(double gl){
-    return log10(gl);
-}
 
 std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
     std::map<const char*,rawdata> vcf_data;
@@ -333,8 +330,9 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
                 break;
         }
 
-        homo_pl=homo_pl/4;
-        hetero_pl =hetero_pl/6;
+        homo_pl= homo_pl;
+        hetero_pl = hetero_pl;
+        likelihood = log(0);
         if (homo_pl !=hetero_pl) {
             double mmax = std::max(homo_pl,hetero_pl);
             double val = std::min(homo_pl,hetero_pl) - mmax;
@@ -349,16 +347,8 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
         //Storing positions and likelihoods
         std::vector<int> & positions_vector = positions[bcf_hdr_id2name(header,record->rid)];
         std::vector<double>  & likelihoods_vector = likelihoods[bcf_hdr_id2name(header,record->rid)];
-        if(positions_vector.size()!=positions_vector.capacity()){
-            positions_vector.push_back(record->pos + 1);
-            likelihoods_vector.push_back(likelihood);
-        }
-        else {
-            positions_vector.reserve(positions_vector.capacity() + 10000000);
-            likelihoods_vector.reserve(likelihoods_vector.capacity() + 10000000);
-            positions_vector.push_back(record->pos + 1);
-            likelihoods_vector.push_back(likelihood);
-        }
+        positions_vector.push_back(record->pos + 1);
+        likelihoods_vector.push_back(likelihood);
     }
     bcf_hdr_destroy(header);
     bcf_destroy(record);
@@ -389,109 +379,6 @@ std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop){
 #endif
         vcf_data[it->first]=output_rawdata;
     }
-    fprintf(stderr,"\t-> VCF file successfully read\n");
-    return vcf_data;
-}
-
-std::map<const char*,rawdata> get_vcf_data(const char* fname, int start, int stop){
-    std::map<const char*,rawdata> vcf_data;
-    std::map<const char*, std::vector<int > > positions;
-    std::map<const char*, std::vector<double > > likelihoods;
-    int* ploidy = NULL;
-    int pl_arr_len = 0;
-    htsFile* input_file = bcf_open(fname,"r");
-    bcf_hdr_t* header = bcf_hdr_read(input_file);
-    bcf1_t *record = bcf_init();
-    int i = 0;
-    //Reading data from vcf file
-    FILE*fout=fopen("output.txt","w");
-    while(bcf_read(input_file, header, record) == 0) {
-        bcf_unpack(record,BCF_UN_STR);
-        //Skipping INDELS and N in REF
-        if(bcf_get_info_flag(header,record,"INDEL",NULL,NULL)==1 || record->d.als[0]=='N') continue;
-
-        i++;
-        if(i>1000) break;
-        double homo_pl = 0;
-        double hetero_pl =0;
-        double likelihood;
-        bcf_get_format_int32(header, record, "PL", &ploidy, &pl_arr_len);
-        //Counting PL scores
-        switch(record->n_allele){
-            case 2:
-                homo_pl = pl_to_gl(ploidy[0])+ pl_to_gl(ploidy[2]);
-                hetero_pl = pl_to_gl(ploidy[1]);
-
-                break;
-            case 3:
-                homo_pl = pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]);
-                hetero_pl = pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[4]);
-                break;
-            case 4:
-                homo_pl = pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[4]) + pl_to_gl(ploidy[7]) +  pl_to_gl(ploidy[9]);
-                hetero_pl = pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]) +  pl_to_gl(ploidy[6]) +  pl_to_gl(ploidy[8]);
-            default:
-                break;
-        }
-
-        homo_pl=homo_pl/4;
-        hetero_pl =hetero_pl/6;
-        if (homo_pl !=hetero_pl) {
-            double mmax = std::max(homo_pl,hetero_pl);
-            double val = std::min(homo_pl,hetero_pl) - mmax;
-
-            likelihood = val;
-            if (hetero_pl < homo_pl)
-                likelihood = -likelihood;
-
-            //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
-        }
-        fprintf(fout,"%lf\n",likelihood);
-        //Storing positions and likelihoods
-        std::vector<int> & positions_vector = positions[bcf_hdr_id2name(header,record->rid)];
-        std::vector<double>  & likelihoods_vector = likelihoods[bcf_hdr_id2name(header,record->rid)];
-        if(positions_vector.size()!=positions_vector.capacity()){
-            positions_vector.push_back(record->pos + 1);
-            likelihoods_vector.push_back(likelihood);
-        }
-        else {
-            positions_vector.reserve(positions_vector.capacity() + 10000000);
-            likelihoods_vector.reserve(likelihoods_vector.capacity() + 10000000);
-            positions_vector.push_back(record->pos + 1);
-            likelihoods_vector.push_back(likelihood);
-        }
-    }
-    bcf_hdr_destroy(header);
-    bcf_destroy(record);
-    bcf_close(input_file);
-    rawdata output_rawdata;
-    //Creating rawdata objects from vectors
-    for(std::map<const char*, std::vector<int > >::iterator it = positions.begin();it!=positions.end();it++){
-        output_rawdata.pos= new int[positions[it->first].size()];
-        memcpy(output_rawdata.pos, positions[it->first].data(),positions[it->first].size()*sizeof(int));
-        output_rawdata.len = positions[it->first].size();
-        positions[it->first].clear();
-        output_rawdata.gls= new double[likelihoods[it->first].size()];
-        memcpy(output_rawdata.gls,likelihoods[it->first].data(),likelihoods[it->first].size()*sizeof(double));
-        likelihoods[it->first].clear();
-
-        output_rawdata.firstp=0;
-        output_rawdata.lastp = output_rawdata.len;
-#if 0 //the code below should be read if we ever want to run on specific specified regions
-        if(start!=-1)
-            while(output_rawdata.firstp<output_rawdata.len&&output_rawdata.pos[output_rawdata.firstp]<start)
-                output_rawdata.firstp++;
-
-
-        if(stop!=-1&&stop<=output_rawdata.pos[output_rawdata.lastp-1]){
-            output_rawdata.lastp=output_rawdata.firstp;
-            while(output_rawdata.pos[output_rawdata.lastp]<stop)
-                output_rawdata.lastp++;
-        }
-#endif
-        vcf_data[it->first]=output_rawdata;
-    }
-    fclose(fout);
     fprintf(stderr,"\t-> VCF file successfully read\n");
     return vcf_data;
 }

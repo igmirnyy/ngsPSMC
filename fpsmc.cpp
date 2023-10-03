@@ -536,7 +536,6 @@ exit(0);
         fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
         objs = new fastPSMC *[nobs];
         ops = new oPars[nobs];
-        std::map<const char *, rawdata> data = get_vcf_data("GenotypeLikelihoods0703.vcf.gz1328219.out", -1, -1);
         for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
             fprintf(stderr,"reading chromosome %s", it->first);
             rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
