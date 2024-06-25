@@ -15,27 +15,27 @@ typedef char mygltype;
 typedef double mygltype;
 #endif 
 
-typedef struct{
-  mygltype *gls;//2*len
-  int *pos;//len
+typedef struct {
+  mygltype* gls;//2*len
+  int* pos;//len
   size_t len;
   size_t firstp;//if we have specified a region, then this is the first index to use
   size_t lastp;//if we have specified a region, then this is the last index to use
 }rawdata;
 
-typedef struct{
+typedef struct {
   size_t nSites;
   myMap mm;
-  char *bgzf_pos;
-  char *bgzf_gls;
+  char* bgzf_pos;
+  char* bgzf_gls;
   int version;//1 is gl, otherwise assuming fasta
-  char *fname;//input.saf.idx?
-  perFasta *pf;
+  char* fname;//input.saf.idx?
+  perFasta* pf;
 }perpsmc;
 
-perpsmc* perpsmc_init(char *fname,int nChr);
-void writepsmc_header(FILE *fp,perpsmc *pp,int onlysubset);
-void perpsmc_destroy(perpsmc *pp);
-rawdata readstuff(perpsmc *pp,char *chr,int blockSize,int start,int stop);
-std::map<const char*,rawdata> get_vcf_data(perpsmc* pp, int start, int stop);
-std::map<const char*,rawdata> get_vcf_data(const char* fname, int start, int stop);
+perpsmc* perpsmc_init(char* fname, int nChr);
+void writepsmc_header(FILE* fp, perpsmc* pp, int onlysubset);
+void perpsmc_destroy(perpsmc* pp);
+rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop);
+std::map<const char*, rawdata> get_vcf_data(perpsmc* pp, int start, int stop);
+std::map<const char*, rawdata> get_vcf_data(const char* fname, int start, int stop);

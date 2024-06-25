@@ -1,0 +1,5 @@
+utils/*
+.DS_Store
+*.vcf
+settings.json
+.editorconfig
