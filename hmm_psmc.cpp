@@ -185,6 +185,17 @@ double qFunction_inner2(int tk_l, double** nP, double** baumwelch, double** tran
 
 }
 
+void print_fw_bw_log_matrix(const char* fname, double **array, int tk_l, int n_windows){
+  FILE* file = fopen(fname, "w");
+    for (int i = 0; i < tk_l; i++){
+      for (int v = 0; v<n_windows - 1; v++){
+        fprintf(file, "%.10e,", array[i][v]);
+      }
+      fprintf(file, "%.10e\n", array[i][n_windows]);
+    }
+  fclose(file);
+}
+
 void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw) {
   //we first set the initial fwprobs to stationary distribution
   for (int i = 0;i < tk_l;i++) {
@@ -237,6 +248,9 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
   double tmptmp = addProtectN(tmp, tk_l);
   assert(!std::isnan(tmptmp));
   bwllh = tmptmp;
+  print_fw_bw_log_matrix("forward.csv", fw,  tk_l, windows.size());
+  print_fw_bw_log_matrix("backward.csv", bw,  tk_l, windows.size());
+  exit(0);
 
 }
 
