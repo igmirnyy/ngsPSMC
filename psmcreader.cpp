@@ -333,18 +333,7 @@ std::map<const char*, rawdata> get_vcf_data(perpsmc* pp, int start, int stop) {
 
         homo_pl = homo_pl;
         hetero_pl = hetero_pl;
-        likelihood = log(0);
-        if (homo_pl != hetero_pl) {
-            double mmax = std::max(homo_pl, hetero_pl);
-            double val = std::min(homo_pl, hetero_pl) - mmax;
-
-            likelihood = val;
-            if (hetero_pl < homo_pl)
-                likelihood = -likelihood;
-
-            //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
-        }
-
+        likelihood =   hetero_pl > homo_pl? -5: 5;
         //Storing positions and likelihoods
         std::vector<int>& positions_vector = positions[bcf_hdr_id2name(header, record->rid)];
         std::vector<double>& likelihoods_vector = likelihoods[bcf_hdr_id2name(header, record->rid)];
@@ -357,6 +346,7 @@ std::map<const char*, rawdata> get_vcf_data(perpsmc* pp, int start, int stop) {
     rawdata output_rawdata;
     //Creating rawdata objects from vectors
     for (std::map<const char*, std::vector<int > >::iterator it = positions.begin();it != positions.end();it++) {
+        output_rawdata = rawdata();
         output_rawdata.pos = new int[positions[it->first].size()];
         memcpy(output_rawdata.pos, positions[it->first].data(), positions[it->first].size() * sizeof(int));
         output_rawdata.len = positions[it->first].size();
@@ -378,7 +368,7 @@ std::map<const char*, rawdata> get_vcf_data(perpsmc* pp, int start, int stop) {
                 output_rawdata.lastp++;
         }
 #endif
-        vcf_data[it->first] = output_rawdata;
+        vcf_data[it->first] = std::move(output_rawdata);
     }
     fprintf(stderr, "\t-> VCF file successfully read\n");
     return vcf_data;

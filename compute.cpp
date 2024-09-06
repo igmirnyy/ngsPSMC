@@ -238,12 +238,12 @@ void ComputeP1(double* tk, int tk_l, double* P, const double* epsize, double rho
     P[i] = 1.0 / (1.0 + epsize[i] * 2.0 * rho);
     P[i] *= exp(-rho * 2.0 * tk[i]) - exp(-rho * 2.0 * tk[i + 1] - (tk[i + 1] - tk[i]) / epsize[i]);
     P[i] /= 1.0 - exp(-(tk[i + 1] - tk[i]) / epsize[i]);
-    P[i] = log(P[i]);
+    P[i] = P[i];
     //    fprintf(stderr,"P1[%d]:%f\n",i,P[i]);
   }
 
   //Last interval ends with +infinity
-  P[tk_l - 1] = log(1.0 / (1.0 + epsize[tk_l - 1] * 2.0 * rho) * exp(-rho * 2.0 * tk[tk_l - 1]));
+  P[tk_l - 1] = 1.0 / (1.0 + epsize[tk_l - 1] * 2.0 * rho) * exp(-rho * 2.0 * tk[tk_l - 1]);
   //  fprintf(stderr,"P1[%d]:%f\n",tk_l-1,P[tk_l-1]);
 }
 /*
@@ -253,8 +253,8 @@ void ComputeP1(double* tk, int tk_l, double* P, const double* epsize, double rho
 
 void ComputeP5(double* tk, int tk_l, double* P, const double* epsize) {
   for (unsigned i = 0; i < tk_l - 1; i++)
-    P[i] = log(exp(-(tk[i + 1] - tk[i]) / epsize[i]));
-  P[tk_l - 1] = log(0.0);
+    P[i] = exp(-(tk[i + 1] - tk[i]) / epsize[i]);
+  P[tk_l - 1] = 0;
 }
 
 
@@ -266,9 +266,9 @@ void ComputeP6(double* tk, int tk_l, double* P, const double* epsize, double rho
     tmp -= 1 / (1 - 2 * rho * epsize[i]) * exp(-2 * rho * tk[i + 1]);
     tmp += 2 * rho * epsize[i] / (1 - 2 * rho * epsize[i]) * exp(-2 * rho * tk[i] - (tk[i + 1] - tk[i]) / epsize[i]);
     P[i] *= tmp;
-    P[i] = log(P[i]);
+    P[i] = P[i];
   }
-  P[tk_l - 1] = log(0.0);
+  P[tk_l - 1] = 0.0;
 }
 
 /*
@@ -301,7 +301,7 @@ void ComputeP6(double *tk,int tk_l,double *P,const double *epsize,double rho){
 void ComputeP2(int tk_l, double* P2, double* P5) {
   for (unsigned i = 0; i < tk_l; i++) {
 
-    P2[i] = log(1.0 - exp(P5[i]));
+    P2[i] = 1.0 - P5[i];
     //    fprintf(stderr,"%d):p5:%f value:%f\n",i,P5[i],P2[i]);
   //  P2[tk_l-1]=-0.0;
   }
@@ -314,9 +314,9 @@ void ComputeP3(double* tk, int tk_l, double* P3, const double* epsize, double rh
     P3[i] = exp(-tk[i] * 2.0 * rho);
     P3[i] += epsize[i] * 2.0 * rho / (1.0 - epsize[i] * 2.0 * rho) * exp(-(tk[i + 1] - tk[i]) / epsize[i] - tk[i] * 2.0 * rho);
     P3[i] -= 1.0 / (1.0 - epsize[i] * 2.0 * rho) * exp(-tk[i + 1] * 2.0 * rho);
-    P3[i] = log(P3[i]);
+    P3[i] = P3[i];
   }
-  P3[tk_l - 1] = log(0.0);
+  P3[tk_l - 1] = 0.0;
 }
 
 /*
@@ -354,7 +354,7 @@ void ComputeP4(double* tk, int tk_l, double* P4, const double* epsize, double rh
       fprintf(stderr, "\t-> This fix shouldnt happen that often: compute.cpp computep4 epsize[%u]:%f\n", i, epsize[i]);
       fact2 = fabs(fact2);
     }
-    P4[i] = log(fact1) + log(fact2);//log(fact1)+log(fact2);
+    P4[i] = fact1 * fact2;//log(fact1)+log(fact2);
 
 #if 0
     fprintf(stderr, "\t-> fact1: %e fact2: %e fact1*fact2: %f\n", fact1, fact2, fact1 * fact2);
@@ -384,34 +384,34 @@ void ComputeP4(double* tk, int tk_l, double* P4, const double* epsize, double rh
   double bottom = (1.0 + 2.0 * rho * epsize[tk_l - 1]);
   double expot = exp(-2.0 * rho * tk[tk_l - 1]);
   //  fprintf(stderr,"TOPTOP top:%f bot:%f exp:%f rho:%f epSize[tk_l-1]:%e\n",top,bottom,expot,rho,epsize[tk_l-1]);
-  P4[tk_l - 1] = log(2.0 * rho * epsize[tk_l - 1] / (1.0 + 2.0 * rho * epsize[tk_l - 1]) * exp(-2.0 * rho * tk[tk_l - 1]));
-  assert(exp(P4[tk_l - 1]) >= 0 && exp(P4[tk_l - 1]) <= 1);
+  P4[tk_l - 1] = 2.0 * rho * epsize[tk_l - 1] / (1.0 + 2.0 * rho * epsize[tk_l - 1]) * exp(-2.0 * rho * tk[tk_l - 1]);
+  assert(P4[tk_l - 1] >= 0 && P4[tk_l - 1] <= 1);
 
 }
 
 
 void ComputeP7(double* tk, int tk_l, double* P7, double* P3, const double* epsize, double rho) {
   for (unsigned i = 0; i < tk_l - 1; i++)
-    P7[i] = log(exp(-2.0 * rho * tk[i]) - exp(-2.0 * rho * tk[i + 1]) - exp(P3[i]));
+    P7[i] = exp(-2.0 * rho * tk[i]) - exp(-2.0 * rho * tk[i + 1]) - P3[i];
 
   unsigned i = tk_l - 1;
 
-  P7[i] = log(0.0);
+  P7[i] = 0.0;
   //  fprintf(stderr,"P7 (%f,%f)\n",exp(P7[0]),exp(P7[1]));
 }
 
 void ComputeP0(int tk_l, double* P0, double* P5) { //probability P(T > i)
   P0[0] = P5[0];
   for (unsigned i = 1; i < tk_l; i++)
-    P0[i] = P0[i - 1] + P5[i];
+    P0[i] = P0[i - 1] * P5[i];
 }
 
 double ComputeXXX(int i, int j, double** P) {
   assert(i < j);//check if needed
-  double sum = 0;
+  double product = 1;
   for (int l = i + 1;l <= j - 1;l++)
-    sum += P[5][l];
-  double returnVal = P[7][i] + P[2][j] + sum;
+    product *= P[5][l];
+  double returnVal = P[7][i] * P[2][j] * product;
 
   return returnVal;
 }
@@ -443,31 +443,30 @@ void ComputeExpectedCoalTime(double* tk, int tk_l, double* expectCoalT, const do
 double calc_trans(int k, int j, double** P) {
   double ret;
   if (k < j) {
-    double sumL = 0;
+    double product = 1;
     for (int l = k + 1;l <= j - 1;l++)
-      sumL += P[5][l];
+      product *= P[5][l];
 
-    ret = exp(P[6][k] + P[2][j] + sumL);
+    ret = P[6][k] * P[2][j] * product;
     double sum = 0;
     for (int i = 0;i < k;i++)
-      sum += exp(ComputeXXX(i, j, P));//underflow stuff
+      sum += ComputeXXX(i, j, P);//underflow stuff
     ret += sum;//underflow stuff
-    ret = log(ret);
   }
   else if (j == k) {
     double sum = 0;
     for (int i = 0;i < k;i++) {
-      sum += exp(ComputeXXX(i, k, P));//underflow stuff
+      sum += ComputeXXX(i, k, P);//underflow stuff
     }
 
-    ret = log(exp(P[1][k]) + exp(P[4][k]) + sum);
+    ret = P[1][k] + P[4][k] + sum;
   }
   else if (k > j) {
     double sum = 0;
     for (int i = 0;i < j;i++) {
-      sum += exp(ComputeXXX(i, j, P));//underflow stuff
+      sum += ComputeXXX(i, j, P);//underflow stuff
     }
-    ret = log(exp(P[3][j]) + sum);//addProtect2(P[3][j],log(sum));
+    ret = P[3][j] + sum;//addProtect2(P[3][j],log(sum));
   }
   else {
     assert(0 == 1);

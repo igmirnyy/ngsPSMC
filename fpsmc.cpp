@@ -48,6 +48,8 @@ typedef struct {
   double llh;
   double* parsIn;
   double** fw;
+  double* fw_norm;
+  double* bw_norm;
   double** bw;
 }oPars;
 
@@ -588,6 +590,8 @@ int psmc_wrapper(args* pars, int blocksize) {
       fws_bws[i].fw[j] = new double[objs[i]->windows.size() + 1];
       fws_bws[i].bw[j] = new double[objs[i]->windows.size() + 1];
     }
+    fws_bws[i].fw_norm = new double[objs[i]->windows.size() + 1];
+    fws_bws[i].bw_norm = new double[objs[i]->windows.size() + 1];
     fws_bws[i].len = objs[i]->windows.size() + 1;
   }
 

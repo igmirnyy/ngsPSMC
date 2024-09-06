@@ -32,14 +32,14 @@ extern int doQuadratic;
 void calculate_stationary(int tk_l, double* results, double** P) {
   results[0] = P[2][0];//fix this
   for (int i = 1;i < tk_l;i++) {
-    results[i] = P[2][i] + P[0][i - 1];
+    results[i] = P[2][i] * P[0][i - 1];
   }
 
-  double tmp = 0;
+  double stationary_sum = 0;
   for (int i = 0;i < tk_l;i++)
-    tmp += exp(results[i]);
+    stationary_sum += results[i];
 
-  assert(fabs(1 - tmp) < 1e-6);//check that it sums to one
+  assert(fabs(1 - stationary_sum) < 1e-6);//check that it sums to one
 }
 
 /*
@@ -196,19 +196,68 @@ void print_fw_bw_log_matrix(const char* fname, double **array, int tk_l, int n_w
   fclose(file);
 }
 
-void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw) {
+void fastPSMC::normalize(double** array, int tk_l, int index, double factor){
+  fprintf(stdout, "normalizing with factor %.4f\n", factor);
+  for(int i = 0; i<tk_l;i++){
+    array[i][index] /= factor;
+  }
+}
+
+double get_fw_bw_log(double** array, double* norm, int time, int window){
+  return log(array[time][window]) + norm[window];
+}
+void print_fw_bw_log_matrix(const char* fname, double **array, double* norm, int tk_l, int n_windows){
+  FILE* file = fopen(fname, "w");
+    for (int i = 0; i < tk_l; i++){
+      for (int v = 0; v<n_windows - 1; v++){
+        fprintf(file, "%.16f,", get_fw_bw_log(array, norm, i, v));
+      }
+      fprintf(file, "%.16f\n", get_fw_bw_log(array, norm, i, n_windows));
+    }
+  fclose(file);
+}
+void print_P(double** P, int tk_l){
+  FILE* file = fopen("P's.csv", "w");
+  for(int i=0; i<=7; i++){
+    for (int j = 0; j < tk_l - 1; j++){
+       fprintf(file, "%.8f,", P[i][j]);
+    }
+    fprintf(file, "%.8f\n", P[i][tk_l - 1]);
+  }
+  fclose(file);
+}
+void print_emissions(double**emis, int n_windows, int tk_l){
+  FILE* file = fopen("emissions.csv", "w");
+    for (int i = 0; i < tk_l; i++){
+      for (int v = 0; v<n_windows - 1; v++){
+        fprintf(file, "%.16f,", emis[i][v]);
+      }
+      fprintf(file, "%.16f\n", emis[i][n_windows]);
+    }
+  fclose(file);
+}
+void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw, double* fw_norm, double* bw_norm) {
   //we first set the initial fwprobs to stationary distribution
+  print_P(P, tk_l);
+  print_emissions(emis, windows.size(), tk_l);
   for (int i = 0;i < tk_l;i++) {
     fw[i][0] = stationary[i];
     //      fprintf(stderr,"stationary[%d]: %f\n",i,stationary[i]);
   }
   //we now loop over windows.
   //v=0 is above and is the initial distribution, we therefore plug in at v+1
+  double norm = 0;
+  fw_norm[0] = 0;
   for (int v = 0;v < windows.size();v++) {
     ComputeRs(v, fw, 0);//<-prepare R1,R2
-    fw[0][v + 1] = addProtect3(lprod(fw[0][v], P[1][0]), lprod(R1[0], P[3][0]), lprod(fw[0][v], P[4][0])) + emis[0][v + 1];
-    for (unsigned i = 1; i < tk_l; i++)
-      fw[i][v + 1] = addProtect4(lprod(fw[i][v], P[1][i]), lprod(R2[i - 1], P[2][i]), lprod(R1[i], P[3][i]), lprod(fw[i][v], P[4][i])) + emis[i][v + 1];
+    fw[0][v + 1] = (fw[0][v] * (P[1][0] + P[4][0]) + R1[0] * P[3][0]) * exp(emis[0][v + 1]);
+    norm = fw[0][v + 1];
+    for (unsigned i = 1; i < tk_l; i++){
+      fw[i][v + 1] = (fw[i][v] * (P[1][i] + P[4][i])+ R2[i - 1] * P[2][i] + R1[i] * P[3][i]) * exp(emis[i][v + 1]);
+      norm = fw[i][v + 1] > norm ? fw[i][v + 1] : norm;
+    }
+    normalize(fw, tk_l, v + 1, norm);
+    fw_norm[v + 1] = fw_norm[v] - log(norm);
 
   }
 
@@ -224,25 +273,31 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
   //now do backward algorithm
   //initialize by stationary
   for (int i = 0;i < tk_l;i++)
-    bw[i][windows.size()] = lprod(stationary[i], emis[i][windows.size()]);
+    bw[i][windows.size()] = stationary[i] * emis[i][windows.size()];
 
 
+  bw_norm[windows.size()] = 0;
   //we plug in values at v-1, therefore we break at v==1
   for (int v = windows.size();v > 0;v--) {
     ComputeRs(v, bw, 1);//<-prepare R1,R2
-
-    bw[0][v - 1] = addProtect3(lprod(bw[0][v], P[1][0]), lprod(R1[0], P[3][0]), lprod(bw[0][v], P[4][0])) + emis[0][v - 1];
-    bw[0][v] -= lprod(stationary[0], emis[0][v]);
+    bw[0][v - 1] = (bw[0][v] * (P[1][0] + P[4][0]) + R1[0] * P[3][0]) * exp(emis[0][v - 1]);
+    norm =  bw[0][v - 1];
+    bw[0][v] /= stationary[0] * emis[0][v];
     for (unsigned i = 1; i < tk_l; i++) {
-      bw[i][v - 1] = addProtect4(lprod(bw[i][v], P[1][i]), lprod(R2[i - 1], P[2][i]), lprod(R1[i], P[3][i]), lprod(bw[i][v], P[4][i])) + emis[i][v - 1];
-      bw[i][v] -= lprod(stationary[i], emis[i][v]);
+      bw[i][v - 1] = (bw[i][v] * (P[1][i] + P[4][i]) + R2[i - 1] * P[2][i] + R1[i] * P[3][i]) * exp(emis[i][v - 1]);
+      norm = bw[i][v - 1] > norm ? bw[i][v - 1] : norm;
+      bw[i][v] /= stationary[i] * emis[i][v];
     }
+    normalize(bw, tk_l, v - 1, norm);
+    bw_norm[v - 1] = bw_norm[v] - log(norm);
   }
 
   for (int i = 0;i < tk_l;i++)
-    bw[i][0] -= stationary[i];
+    bw[i][0] /= stationary[i];
 
-
+  print_fw_bw_log_matrix("forward.csv", fw, fw_norm, tk_l, windows.size());
+  print_fw_bw_log_matrix("backward.csv", bw, bw_norm, tk_l, windows.size());
+  exit(0);
   for (int i = 0;i < tk_l;i++)
     tmp[i] = bw[i][1] + stationary[i] + emis[i][1];
   double tmptmp = addProtectN(tmp, tk_l);
@@ -376,10 +431,12 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
   for (int v = 0;v < windows.size();v++) {//for each window
     assert(windows[v].from <= windows[v].to);
     //   fprintf(stderr,"v:%d from:%d to:%d\n",v,windows[v].from,windows[v].to);
+    double norm = log(0);
+    
     for (int j = 0;j < tk_l;j++) {//for each interval/state
       emis[j][v + 1] = 0;
 
-      double inner = exp(nontmpdir[j]);///exp(-2.0*tk[j]*theta); // this part relates to issue #1
+      double inner = nontmpdir[j];///exp(-2.0*tk[j]*theta); // this part relates to issue #1
 #if 0
       //      double inner;
       if (j < tk_l - 1)
@@ -420,6 +477,11 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
           exit(0);
         }
       }
+      norm = norm > emis[j][v + 1]? norm: emis[j][v + 1];
+    }
+    fprintf(stdout, "norm %f\n", norm);
+    for (int j = 0;j < tk_l;j++) {
+      emis[j][v+1] = emis[j][v + 1] - norm;
     }
   }
 }
@@ -510,6 +572,8 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
 
   double** fw = NULL;
   double** bw = NULL;
+  double* fw_norm = NULL;
+  double* bw_norm = NULL;
   if (d->len < windows.size() + 1) {
     for (int i = 0;i < tk_l;i++) {
       delete[] d->fw[i];
@@ -519,10 +583,16 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
       d->len = windows.size() + 1;
     }
   }
+  delete[] d->fw_norm;
+  delete[] d->bw_norm;
+  d->fw_norm = new double[windows.size() + 1];
+  d->bw_norm = new double[windows.size() + 1];
   fw = d->fw;
   bw = d->bw;
+  fw_norm = d->fw_norm;
+  bw_norm = d->bw_norm;
 
-  calculate_FW_BW_Probs(tk, tk_l, epsize, fw, bw);
+  calculate_FW_BW_Probs(tk, tk_l, epsize, fw, bw, fw_norm, bw_norm);
 
 
   if (doQuadratic == 0)

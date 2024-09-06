@@ -9,6 +9,8 @@ void ComputeGlobalProbabilities(double* tk, int tk_l, double** P, const double* 
 typedef struct {
   double** fw;
   double** bw;
+  double* fw_norm;
+  double* bw_norm;
   int len;
 }fw_bw;
 #define PSMC_T_INF 1000.0
@@ -67,7 +69,8 @@ public:
       fprintf(fp, "win[%d]=(%d,%d)\n", w, windows[w].from, windows[w].to);
   }
   void allocate(int tk_l);
-  void calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw);
+  void calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw, double* fw_norm, double* bw_norm);
+  void normalize(double** array, int tk_l, int index, double factor);
   void make_hmm_pre(double* tk, int tk_l, double* epsize, double theta, double rho);
   double make_hmm(double* tk, int tk_l, double* epsize, double theta, fw_bw* d);
   void print_emission(const char* fname) {
@@ -87,12 +90,12 @@ private:
   int has_calc_emissions;
   void ComputeR2(int v, double** mat, int direction) {
     double addProtect3(double, double, double);
-    double tmp = log(0);
+    double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
-      double p1 = lprod(tmp, P[5][i]);
-      double p2 = lprod(mat[i][v], P[6][i]);
-      double p3 = lprod(R1[i], P[7][i]);
-      R2[i] = addProtect3(p1, p2, p3);
+      double p1 = tmp * P[5][i];
+      double p2 = mat[i][v] * P[6][i];
+      double p3 = R1[i] * P[7][i];
+      R2[i] = p1 + p2 + p3;
       if (std::isnan(R2[i])) {
         fprintf(stderr, "[hmm_psmc.h:computeR2] R2[%d] evaluates to NaN p5:%f tmp:%f p1:%f p2:%f p3:%f\n", i, P[5][i], tmp, p1, p2, p3);
         exit(0);
@@ -105,9 +108,9 @@ private:
 
   void ComputeR1(int v, double** mat, int direction) {
     double addProtect2(double, double);
-    R1[tk_l - 1] = log(0);
+    R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--) {
-      R1[i] = addProtect2(R1[i + 1], mat[i + 1][v]);
+      R1[i] = R1[i + 1] + mat[i + 1][v];
     }
     if (0 && direction == 0)//0=from start to end, 1=from end to start
       fprintf(stderr, "ComputeRs_R1[%d]:\t%f\t%f\t%f\n", v, R1[0], R1[1], R1[2]);

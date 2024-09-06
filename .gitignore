@@ -3,3 +3,6 @@ utils/*
 *.vcf
 settings.json
 .editorconfig
+*.d
+*.o
+sim*
