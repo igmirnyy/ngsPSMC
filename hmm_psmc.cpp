@@ -189,14 +189,36 @@ void print_fw_bw_log_matrix(const char* fname, double **array, int tk_l, int n_w
   FILE* file = fopen(fname, "w");
     for (int i = 0; i < tk_l; i++){
       for (int v = 0; v<n_windows - 1; v++){
-        fprintf(file, "%.10e,", array[i][v]);
+        fprintf(file, "%.16f,", array[i][v]);
       }
-      fprintf(file, "%.10e\n", array[i][n_windows]);
+      fprintf(file, "%.16f\n", array[i][n_windows]);
     }
   fclose(file);
 }
 
+void print_P(double** P, int tk_l){
+  FILE* file = fopen("P's.csv", "w");
+  for(int i=0; i<=7; i++){
+    for (int j = 0; j < tk_l - 1; j++){
+       fprintf(file, "%.8f,", exp(P[i][j]));
+    }
+    fprintf(file, "%.8f\n", exp(P[i][tk_l - 1]));
+  }
+  fclose(file);
+}
+void print_emissions(double **emis, int tk_l, int n_windows){
+  FILE* file = fopen("emissions.csv", "w");
+    for (int i = 0; i < tk_l; i++){
+      for (int v = 0; v<n_windows - 1; v++){
+        fprintf(file, "%.16f,", emis[i][v]);
+      }
+      fprintf(file, "%.16f\n", emis[i][n_windows]);
+    }
+  fclose(file);
+}
 void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw) {
+    print_P(P, tk_l);
+  print_emissions(emis, tk_l, windows.size());
   //we first set the initial fwprobs to stationary distribution
   for (int i = 0;i < tk_l;i++) {
     fw[i][0] = stationary[i];
@@ -248,8 +270,8 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
   double tmptmp = addProtectN(tmp, tk_l);
   assert(!std::isnan(tmptmp));
   bwllh = tmptmp;
-  print_fw_bw_log_matrix("forward.csv", fw,  tk_l, windows.size());
-  print_fw_bw_log_matrix("backward.csv", bw,  tk_l, windows.size());
+  print_fw_bw_log_matrix("forward_log.csv", fw,  tk_l, windows.size());
+  print_fw_bw_log_matrix("backward_log.csv", bw,  tk_l, windows.size());
   exit(0);
 
 }
