@@ -6,3 +6,5 @@ settings.json
 *.d
 *.o
 sim*
+.venv
+.DS_Store

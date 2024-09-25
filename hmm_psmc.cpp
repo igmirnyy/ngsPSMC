@@ -217,8 +217,8 @@ void print_emissions(double **emis, int tk_l, int n_windows){
   fclose(file);
 }
 void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw) {
-    print_P(P, tk_l);
-  print_emissions(emis, tk_l, windows.size());
+    // print_P(P, tk_l);
+  // print_emissions(emis, tk_l, windows.size());
   //we first set the initial fwprobs to stationary distribution
   for (int i = 0;i < tk_l;i++) {
     fw[i][0] = stationary[i];
@@ -270,9 +270,9 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
   double tmptmp = addProtectN(tmp, tk_l);
   assert(!std::isnan(tmptmp));
   bwllh = tmptmp;
-  print_fw_bw_log_matrix("forward_log.csv", fw,  tk_l, windows.size());
-  print_fw_bw_log_matrix("backward_log.csv", bw,  tk_l, windows.size());
-  exit(0);
+  // print_fw_bw_log_matrix("forward_log.csv", fw,  tk_l, windows.size());
+  // print_fw_bw_log_matrix("backward_log.csv", bw,  tk_l, windows.size());
+  // exit(0);
 
 }
 
@@ -398,6 +398,7 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
   for (int v = 0;v < windows.size();v++) {//for each window
     assert(windows[v].from <= windows[v].to);
     //   fprintf(stderr,"v:%d from:%d to:%d\n",v,windows[v].from,windows[v].to);
+    double norm = log(0);
     for (int j = 0;j < tk_l;j++) {//for each interval/state
       emis[j][v + 1] = 0;
 
@@ -433,7 +434,6 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
 
         if (igl[0] != igl[1])
           emis[j][v + 1] += log((exp(igl[0]) / 4.0) * inner + (exp(igl[1]) / 6.0) * (1.0 - inner));//<- check
-
         if (std::isinf(emis[j][v + 1])) {
           fprintf(stderr, "\t-> Huge bug in code contact developer. Emissions evaluates to zero\n");
           /*
@@ -442,6 +442,10 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
           exit(0);
         }
       }
+      norm = norm > emis[j][v + 1]? norm: emis[j][v + 1];
+    }
+    for (int j = 0;j < tk_l;j++) {
+      emis[j][v + 1] -= norm;
     }
   }
 }
