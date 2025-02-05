@@ -197,7 +197,6 @@ void print_fw_bw_log_matrix(const char* fname, double **array, int tk_l, int n_w
 }
 
 void fastPSMC::normalize(double** array, int tk_l, int index, double factor){
-  fprintf(stdout, "normalizing with factor %.4f\n", factor);
   for(int i = 0; i<tk_l;i++){
     array[i][index] /= factor;
   }
