@@ -25,13 +25,13 @@ void ComputeBR1(int tk_l, double* bR1, double** P, double** bw, double** emis, i
 #endif 
 
 void ComputeBR1(int tk_l, double* bR1, double** P, double* stationary, double** bw, double** emis, int w) {
-  bR1[tk_l - 1] = log(0);
+  bR1[tk_l - 1] = 0;
   double tmp_denom = 0.0;
   for (int i = 0; i < tk_l - 1; i++)
     tmp_denom += P[5][i];
   for (int i = tk_l - 2; i >= 0; i--) {
-    bR1[i] = addProtect2(lprod(bR1[i + 1], P[0][i + 1]), lprod(bw[i + 1][w + 1], emis[i + 1][w + 1], stationary[i + 1]));
-    bR1[i] = lprod(bR1[i], -P[0][i]);
+    bR1[i] = bR1[i + 1] * P[0][i + 1] + bw[i + 1][w + 1] * emis[i + 1][w + 1] * stationary[i + 1];
+    bR1[i] = bR1[i] / P[0][i];
   }
 }
 
@@ -93,54 +93,56 @@ double addProtect2(double a, double b) {
 }
 
 
-void ComputeP11(unsigned numWin, int tk_l, double* P1, double* PP1, double** fw, double** bw, double* workspace, double** emis) {
+void ComputeP11(unsigned numWin, int tk_l, double* P1, double* PP1, double** fw, double** bw, double* fw_bw_norm,double* workspace, double** emis) {
   for (unsigned i = 0; i < tk_l; i++) {
-    workspace[0] = log(0);
+    workspace[0] = 0;
+    PP1[i] = 0;
     for (unsigned l = 1; l < numWin; l++) {
       //      fprintf(stderr,"l:%d\n",l);
       //fprintf(stderr,"fw[][]:%f\n",fw[i][l]);
       //fprintf(stderr,"fw[][]:%f\n",bw[i][l]);
-      workspace[l] = lprod(fw[i][l], P1[i], bw[i][l + 1], emis[i][l + 1]);
+      workspace[l] = fw[i][l] * P1[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
+      PP1[i] += workspace[l];
       //NOTE: In appendix of K.H. paper it seems to be an extra emission probability for site l+1, it is already inside bw[]
     }
-    PP1[i] = addProtectN(workspace, numWin);
+
   }
 }
 
-void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw, double** bw, double** emis) {
+void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw, double** bw,double* fw_bw_norm, double** emis) {
   double R1[tk_l];
   double R2[tk_l];
   double tmp[tk_l];
   for (unsigned i = 0; i < tk_l; i++)
-    PP2[i] = log(0);
+    PP2[i] = 0;
   for (unsigned l = 1; l < numWind; l++) {
-    R1[tk_l - 1] = log(0);
+    R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--)
-      R1[i] = addProtect2(R1[i + 1], fw[i + 1][l]);
-    double tmp = log(0);
+      R1[i] = R1[i + 1] + fw[i + 1][l];
+    double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
-      R2[i] = addProtect3(lprod(tmp, P[5][i]), lprod(fw[i][l], P[6][i]), lprod(R1[i], P[7][i]));
+      R2[i] = tmp * P[5][i] + fw[i][l] * P[6][i] + R1[i] * P[7][i];
       tmp = R2[i];
     }
 
     for (unsigned i = 1; i < tk_l; i++)
-      PP2[i] = addProtect2(PP2[i], lprod(R2[i - 1], P[2][i], bw[i][l + 1], emis[i][l + 1]));//CHECK
+      PP2[i] = PP2[i] + R2[i - 1] * P[2][i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];//CHECK
   }
 }
 
-void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw, double** bw, double** emis) {
+void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw, double** bw,double* fw_bw_norm, double** emis) {
   double R1[tk_l];
   for (unsigned i = 0; i < tk_l; i++)
-    PP3[i] = log(0);
+    PP3[i] = 0;
   for (unsigned l = 1; l < numWind; l++) {
-    R1[tk_l - 1] = log(0);
+    R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--) {
-      R1[i] = addProtect2(R1[i + 1], fw[i + 1][l]);
+      R1[i] = R1[i + 1] + fw[i + 1][l];
       //   fprintf(stderr,"R1[%d]:%f\n",i,R1[i]);
     }
     for (unsigned i = 0; i < tk_l - 1; i++) {
       //      fprintf(stderr,"%d) PP[3]:%f lprod:%f\n",i,PP3[i],lprod(R1[i],P3[i],bw[i][l+1],emis[i][l+1]));
-      PP3[i] = addProtect2(PP3[i], lprod(R1[i], P3[i], bw[i][l + 1], emis[i][l + 1]));
+      PP3[i] = PP3[i] + R1[i] * P3[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
       //      fprintf(stderr,"%d) PP[3]:%f lprod:%f\n",i,PP3[i],lprod(R1[i],P3[i],bw[i][l+1],emis[i][l+1]));
     }
   }
@@ -151,49 +153,50 @@ void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw
 }
 
 
-void ComputeP44(unsigned numWind, int tk_l, double* P4, double* PP4, double** fw, double** bw, double* workspace, double** emis) {
+void ComputeP44(unsigned numWind, int tk_l, double* P4, double* PP4, double** fw, double** bw, double* fw_bw_norm,double* workspace, double** emis) {
 
   for (unsigned i = 0; i < tk_l; i++) {
-    workspace[0] = log(0);
+    workspace[0] = 0;
+    PP4[i] = 0;
     //    int ntot=0;
     for (unsigned l = 1; l < numWind; l++) {
-      workspace[l] = lprod(fw[i][l], P4[i], bw[i][l + 1], emis[i][l + 1]);
+      workspace[l] = fw[i][l] * P4[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
+      PP4[i] += workspace[l];
       //fprintf(stderr,"fw:%f P4:%f bw:%f emis:%f\n",fw[i][l],P4[i],bw[i][l+1],emis[i][l+1] );
       //ntot++;
     }
     //    fprintf(stderr,"nont:%d\n",ntot);
-    PP4[i] = addProtectN(workspace, numWind);
   }
 
 }
-void ComputeP55(unsigned numWind, int tk_l, double** P, double* PP5, double** fw, double** bw, double* stationary, double** emis) {
+void ComputeP55(unsigned numWind, int tk_l, double** P, double* PP5, double** fw, double** bw, double* fw_bw_norm,double* stationary, double** emis) {
   double R1[tk_l];
   double R2[tk_l];
   double bR1[tk_l];
 
   for (unsigned i = 0; i < tk_l; i++)
-    PP5[i] = log(0);
+    PP5[i] = 0;
   for (unsigned l = 1; l < numWind; l++) {
-    R1[tk_l - 1] = log(0);
+    R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--)
-      R1[i] = addProtect2(R1[i + 1], fw[i + 1][l]);
+      R1[i] = R1[i + 1] + fw[i + 1][l];
     //    fprintf(stderr,"ComputeP55_R1[%d]:\t%f\t%f\t%f\n",l,R1[0],R1[1],R1[2]);	
-    double tmp = log(0);
+    double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
-      R2[i] = addProtect3(lprod(tmp, P[5][i]), lprod(fw[i][l], P[6][i]), lprod(R1[i], P[7][i]));
+      R2[i] = tmp * P[5][i] + fw[i][l] * P[6][i] + R1[i] * P[7][i];
       tmp = R2[i];
     }
     //fprintf(stderr,"ComputeP55_R2[%d]:\t%f\t%f\t%f\n",l,R2[0],R2[1],R2[2]);
     ComputeBR1(tk_l, bR1, P, stationary, bw, emis, l);
     for (unsigned i = 1; i < tk_l - 1; i++)
-      PP5[i] = addProtect2(PP5[i], lprod(R2[i - 1], P[5][i], bR1[i]));//<- CHECK ptgi
+      PP5[i] = PP5[i] + R2[i - 1] * P[5][i] * bR1[i] * fw_bw_norm[l];//<- CHECK ptgi
   }
 }
 
-void ComputeP66(unsigned numWind, int tk_l, double** P, double* PP6, double** fw, double** bw, double* stationary, double** emis) {
+void ComputeP66(unsigned numWind, int tk_l, double** P, double* PP6, double** fw, double** bw, double* fw_bw_norm,double* stationary, double** emis) {
   double bR1[tk_l];
   for (unsigned i = 0; i < tk_l; i++)
-    PP6[i] = log(0);
+    PP6[i] = 0;
 
   for (unsigned l = 1; l < numWind; l++) {
     /*
@@ -203,19 +206,19 @@ void ComputeP66(unsigned numWind, int tk_l, double** P, double* PP6, double** fw
     */
     ComputeBR1(tk_l, bR1, P, stationary, bw, emis, l);
     for (unsigned i = 0; i < tk_l - 1; i++)
-      PP6[i] = addProtect2(PP6[i], lprod(fw[i][l], P[6][i], bR1[i]));//<- CHECK btgi
+      PP6[i] = PP6[i] + fw[i][l] * P[6][i] * bR1[i] * fw_bw_norm[l];//<- CHECK btgi
   }
 }
 
-void ComputeP77(unsigned numWind, int tk_l, double** P, double* PP7, double** fw, double** bw, double* stationary, double** emis) {
+void ComputeP77(unsigned numWind, int tk_l, double** P, double* PP7, double** fw, double** bw, double* fw_bw_norm, double* stationary, double** emis) {
   double R1[tk_l];
   double bR1[tk_l];
   for (unsigned i = 0; i < tk_l; i++)
-    PP7[i] = log(0);
+    PP7[i] = 0;
   for (unsigned l = 1; l < numWind; l++) {
-    R1[tk_l - 1] = log(0);
+    R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--)
-      R1[i] = addProtect2(R1[i + 1], fw[i + 1][l]);
+      R1[i] = R1[i + 1] + fw[i + 1][l];
     /*
     bR1[tk_l - 1] = log(0);
     for (int i = tk_l - 2; i >= 0 ; i--)
@@ -223,7 +226,7 @@ void ComputeP77(unsigned numWind, int tk_l, double** P, double* PP7, double** fw
     */
     ComputeBR1(tk_l, bR1, P, stationary, bw, emis, l);
     for (unsigned i = 0; i < tk_l - 1; i++)
-      PP7[i] = addProtect2(PP7[i], lprod(R1[i], P[7][i], bR1[i]));//<-CHECK ptgi
+      PP7[i] = PP7[i] + R1[i] * P[7][i] * bR1[i] * fw_bw_norm[l];//<-CHECK ptgi
   }
 }
 
