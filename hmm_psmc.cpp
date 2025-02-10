@@ -294,11 +294,11 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
   // print_fw_bw_log_matrix("forward.csv", fw, tk_l, windows.size());
   // print_fw_bw_log_matrix("backward.csv", bw, tk_l, windows.size());
   // exit(0);
+  bwllh = 0;
   for (int i = 0;i < tk_l;i++)
-    tmp[i] = bw[i][1] + stationary[i] + emis[i][1];
-  double tmptmp = addProtectN(tmp, tk_l);
-  assert(!std::isnan(tmptmp));
-  bwllh = tmptmp;
+    bwllh += bw[i][1] * stationary[i] * emis[i][1];
+  bwllh = log(bwllh) + total_norm;
+  assert(!std::isnan(bwllh));
   // print_fw_bw_log_matrix("forward.csv", fw,  tk_l, windows.size());
   // print_fw_bw_log_matrix("backward.csv", bw,  tk_l, windows.size());
   // exit(0);
