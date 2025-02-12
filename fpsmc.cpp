@@ -98,7 +98,15 @@ void setEPSize(double* ary, int tk_l, double* from_infile) {
   //  exit(0);
 }
 
-
+void print_epsize(const char* fname, double* array, int tk_l){
+  FILE* file = fopen(fname, "w");
+  fprintf(file, "epsize");
+  for (int i = 0; i < tk_l; i++){
+      fprintf(file, "%.16f,", array[i]);
+  }
+  fprintf(file, "\n");
+  fclose(file);
+}
 
 /*
   objective function. Function to be optimized, for each chromo
@@ -289,6 +297,7 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double rho, i
   stoptimer(opt_timer);
   fprintf(stdout, "MM\toptimization: (wall(min),cpu(min)):(%f,%f) maxqval:%f\n", opt_timer.tids[1], opt_timer.tids[0], max_qval);
   ret_qval = max_qval;
+  print_epsize("before_opt.txt", epsize, tk_l);
   for (int i = 0;0 && i < ndim;i++)
     fprintf(stderr, "optres[%d]:%f\n", i, pars[i]);
   if (DOSPLINE == 0)
@@ -296,7 +305,7 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double rho, i
   else {
     spl->convert(pars, epsize, 0);
   }
-
+  print_epsize("after_opt.txt", epsize, tk_l);
   fprintf(stderr, "\t-> [RUNOPTIM3 TIME]:%s cpu-time used =  %.2f sec \n", __func__, (float)(clock() - t) / CLOCKS_PER_SEC);
   fprintf(stderr, "\t-> [RUNOPTIM3 Time]:%s walltime used =  %.2f sec \n", __func__, (float)(time(NULL) - t2));
 
