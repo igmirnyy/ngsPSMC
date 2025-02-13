@@ -229,9 +229,9 @@ void print_emissions(double**emis, int n_windows, int tk_l){
   FILE* file = fopen("emissions.csv", "w");
     for (int i = 0; i < tk_l; i++){
       for (int v = 0; v<n_windows - 1; v++){
-        fprintf(file, "%.16f,", emis[i][v]);
+        fprintf(file, "%.16e,", emis[i][v]);
       }
-      fprintf(file, "%.16f\n", emis[i][n_windows]);
+      fprintf(file, "%.16e\n", emis[i][n_windows]);
     }
   fclose(file);
 }
@@ -281,16 +281,20 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
     ComputeRs(v, bw, 1);//<-prepare R1,R2
     bw[0][v - 1] = (bw[0][v] * (P[1][0] + P[4][0]) + R1[0] * P[3][0]) * emis[0][v - 1];
     bw[0][v] /= stationary[0] * emis[0][v];
+    if (std::isnan(bw[0][v])) bw[0][v] = 0;
     for (unsigned i = 1; i < tk_l; i++) {
       bw[i][v - 1] = (bw[i][v] * (P[1][i] + P[4][i]) + R2[i - 1] * P[2][i] + R1[i] * P[3][i]) * emis[i][v - 1];
       bw[i][v] /= stationary[i] * emis[i][v];
+      if (std::isnan(bw[i][v])) bw[i][v] = 0;
     }
     normalize(bw, tk_l, v - 1, fw_bw_norm[v - 1]);
   }
 
-  for (int i = 0;i < tk_l;i++)
+  for (int i = 0;i < tk_l;i++){
     bw[i][0] /= stationary[i];
+    if (std::isnan(bw[i][0])) bw[i][0] = 0;
 
+  }
   // print_fw_bw_log_matrix("forward.csv", fw, tk_l, windows.size());
   // print_fw_bw_log_matrix("backward.csv", bw, tk_l, windows.size());
   // exit(0);
@@ -509,12 +513,11 @@ void ComputeBaumWelch(unsigned numWind, int tk_l, double** fw, double** bw, doub
     for (int j = 0;j < tk_l;j++) {
       double tmp = 0;
       for (int w = 1;w < numWind;w++) {
-        tmp = tmp + fw[i][w] * trans[i][j] * emis[j][w + 1] * bw[j][w + 1] * norm[w];
+        tmp += fw[i][w] * trans[i][j] * emis[j][w + 1] * bw[j][w + 1] * norm[w];
         if (0 && w > 20)
           exit(0);
       }
       baumwelch[i][j] = tmp;
-      // printf("baumwelch[%d][%d]= %e\n",i, j, baumwelch[i][j]);
     }
   }
 
