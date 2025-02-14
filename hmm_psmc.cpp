@@ -556,8 +556,7 @@ void fastPSMC::make_hmm_pre(double* tk, int tk_l, double* epsize, double theta, 
 }
 
 double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw_bw* d) {
-
-  printf("make_hmm\n");
+  
   //prepare probs
   if (emis == NULL) {
     emis = new double* [tk_l];
