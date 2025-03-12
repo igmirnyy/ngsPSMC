@@ -524,8 +524,8 @@ void ComputeBaumWelch(unsigned numWind, int tk_l, double** fw, double** bw, doub
   }
 
   for (int i = 0; i < tk_l; i++)
-    baumwelch[tk_l][i] = fw[i][1] * bw[i][1] * norm[i];
-  print_fw_bw_log_matrix("baumwell.csv", baumwelch, tk_l, numWind);
+    baumwelch[tk_l][i] = fw[i][1] * bw[i][1] * norm[1];
+  print_fw_bw_log_matrix("baumwell.csv", baumwelch, tk_l, tk_l);
   // exit(0);
 }
 
