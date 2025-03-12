@@ -155,7 +155,7 @@ double qFunction_inner2(int tk_l, double** nP, double** baumwelch, double** tran
   double Q = 0;
   for (unsigned i = 0; i < tk_l; i++) {
     if (baumwelch[tk_l][i] != 0.0) {
-      double tmpQ = newstationary[i] * baumwelch[tk_l][i];
+      double tmpQ = log(newstationary[i]) * baumwelch[tk_l][i];
       Q += tmpQ;
       if (1 && std::isnan(tmpQ)) {
         fprintf(stderr, "\t->[qFunction_inner2] Q[%d]:%e newstat:%e baumwel:%e\n", i, tmpQ, newstationary[i], baumwelch[tk_l][i]);
