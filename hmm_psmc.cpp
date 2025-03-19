@@ -167,7 +167,7 @@ double qFunction_inner2(int tk_l, double** nP, double** baumwelch, double** tran
   for (unsigned i = 0; i < tk_l; i++) {
     for (unsigned j = 0; j < tk_l; j++) {
       if (baumwelch[i][j] != 0.0) {
-        double tmpQ = trans[i][j] * baumwelch[i][j];
+        double tmpQ = log(trans[i][j]) * baumwelch[i][j];
         Q += tmpQ;
         if (1 && std::isnan(tmpQ)) {
           fprintf(stderr, "\t->[qFunction_inner2]i:%d j:%d tmpQ:%e trans::%e baumwel:%e\n", i, j, tmpQ, trans[i][j], baumwelch[i][j]);
