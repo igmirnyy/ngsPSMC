@@ -281,9 +281,11 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
     ComputeRs(v, bw, 1);//<-prepare R1,R2
     bw[0][v - 1] = bw[0][v] * (P[1][0] + P[4][0]) * emis[0][v] + R1[0] * P[3][0];
     bw[0][v] /= stationary[0];
+    if (std::isnan(bw[0][v])) bw[0][v] = 0;
     for (unsigned i = 1; i < tk_l; i++) {
       bw[i][v - 1] = bw[i][v] * (P[1][i] + P[4][i]) * emis[i][v] + R2[i - 1] * P[2][i] + R1[i] * P[3][i];
       bw[i][v] /= stationary[i];
+      if (std::isnan(bw[i][v])) bw[i][v] = 0;
     }
     normalize(bw, tk_l, v - 1, fw_bw_norm[v - 1]);
   }
