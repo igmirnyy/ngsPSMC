@@ -237,8 +237,7 @@ void print_emissions(double**emis, int n_windows, int tk_l){
 }
 void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw, double* fw_bw_norm) {
   //we first set the initial fwprobs to stationary distribution
-  print_P(P, tk_l);
-  print_emissions(emis, windows.size(), tk_l);
+
   for (int i = 0;i < tk_l;i++) {
     fw[i][0] = stationary[i];
     //      fprintf(stderr,"stationary[%d]: %f\n",i,stationary[i]);
