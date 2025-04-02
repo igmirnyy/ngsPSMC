@@ -552,7 +552,6 @@ int psmc_wrapper(args* pars, int blocksize) {
     objs = new fastPSMC * [nobs];
     ops = new oPars[nobs];
     for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
-      fprintf(stderr, "reading chromosome %s", it->first);
       rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
         -1,
         -1);
