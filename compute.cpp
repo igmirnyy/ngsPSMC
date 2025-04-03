@@ -121,7 +121,7 @@ void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw
     R1[i] = (R1[i + 1] + fw[i + 1][l]) * fw_bw_norm[i + 1];
     double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
-      R2[i] = tmp * P[5][i] + fw[i][l] * P[6][i] + R1[i] * P[7][i];
+      R2[i] = tmp * P[5][i] + fw[i][l] * fw_bw_norm[i] * P[6][i] + R1[i] * P[7][i];
       tmp = R2[i];
     }
 
@@ -183,7 +183,7 @@ void ComputeP55(unsigned numWind, int tk_l, double** P, double* PP5, double** fw
     //    fprintf(stderr,"ComputeP55_R1[%d]:\t%f\t%f\t%f\n",l,R1[0],R1[1],R1[2]);	
     double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
-      R2[i] = tmp * P[5][i] + fw[i][l] * P[6][i] + R1[i] * P[7][i];
+      R2[i] = tmp * P[5][i] + fw[i][l] * P[6][i] * fw_bw_norm[i] + R1[i] * P[7][i];
       tmp = R2[i];
     }
     //fprintf(stderr,"ComputeP55_R2[%d]:\t%f\t%f\t%f\n",l,R2[0],R2[1],R2[2]);
