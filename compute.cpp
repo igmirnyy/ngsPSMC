@@ -142,7 +142,7 @@ void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw
     }
     for (unsigned i = 0; i < tk_l - 1; i++) {
       //      fprintf(stderr,"%d) PP[3]:%f lprod:%f\n",i,PP3[i],lprod(R1[i],P3[i],bw[i][l+1],emis[i][l+1]));
-      PP3[i] = PP3[i] + R1[i] * P3[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
+      PP3[i] = PP3[i] + R1[i] * P3[i] * bw[i][l + 1] * emis[i][l + 1];
       //      fprintf(stderr,"%d) PP[3]:%f lprod:%f\n",i,PP3[i],lprod(R1[i],P3[i],bw[i][l+1],emis[i][l+1]));
     }
   }
