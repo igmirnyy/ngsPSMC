@@ -118,7 +118,7 @@ void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw
   for (unsigned l = 1; l < numWind; l++) {
     R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--)
-      R1[i] = R1[i + 1] + fw[i + 1][l];
+    R1[i] = (R1[i + 1] + fw[i + 1][l]) * fw_bw_norm[i + 1];
     double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
       R2[i] = tmp * P[5][i] + fw[i][l] * P[6][i] + R1[i] * P[7][i];
@@ -126,7 +126,7 @@ void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw
     }
 
     for (unsigned i = 1; i < tk_l; i++)
-      PP2[i] = PP2[i] + R2[i - 1] * P[2][i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];//CHECK
+      PP2[i] = PP2[i] + R2[i - 1] * P[2][i] * bw[i][l + 1] * emis[i][l + 1];//CHECK
   }
 }
 
@@ -137,7 +137,7 @@ void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw
   for (unsigned l = 1; l < numWind; l++) {
     R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--) {
-      R1[i] = R1[i + 1] + fw[i + 1][l];
+      R1[i] = (R1[i + 1] + fw[i + 1][l]) * fw_bw_norm[i + 1];
       //   fprintf(stderr,"R1[%d]:%f\n",i,R1[i]);
     }
     for (unsigned i = 0; i < tk_l - 1; i++) {
@@ -179,7 +179,7 @@ void ComputeP55(unsigned numWind, int tk_l, double** P, double* PP5, double** fw
   for (unsigned l = 1; l < numWind; l++) {
     R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--)
-      R1[i] = R1[i + 1] + fw[i + 1][l];
+      R1[i] = (R1[i + 1] + fw[i + 1][l]) * fw_bw_norm[i + 1];
     //    fprintf(stderr,"ComputeP55_R1[%d]:\t%f\t%f\t%f\n",l,R1[0],R1[1],R1[2]);	
     double tmp = 0;
     for (unsigned i = 0; i < tk_l; i++) {
@@ -189,7 +189,7 @@ void ComputeP55(unsigned numWind, int tk_l, double** P, double* PP5, double** fw
     //fprintf(stderr,"ComputeP55_R2[%d]:\t%f\t%f\t%f\n",l,R2[0],R2[1],R2[2]);
     ComputeBR1(tk_l, bR1, P, stationary, bw, emis, l);
     for (unsigned i = 1; i < tk_l - 1; i++)
-      PP5[i] = PP5[i] + R2[i - 1] * P[5][i] * bR1[i] * fw_bw_norm[l];//<- CHECK ptgi
+      PP5[i] = PP5[i] + R2[i - 1] * P[5][i] * bR1[i];//<- CHECK ptgi
   }
 }
 
@@ -218,7 +218,7 @@ void ComputeP77(unsigned numWind, int tk_l, double** P, double* PP7, double** fw
   for (unsigned l = 1; l < numWind; l++) {
     R1[tk_l - 1] = 0;
     for (int i = tk_l - 2; i >= 0; i--)
-      R1[i] = R1[i + 1] + fw[i + 1][l];
+      R1[i] = (R1[i + 1] + fw[i + 1][l]) * fw_bw_norm[i + 1];
     /*
     bR1[tk_l - 1] = log(0);
     for (int i = tk_l - 2; i >= 0 ; i--)
@@ -226,7 +226,7 @@ void ComputeP77(unsigned numWind, int tk_l, double** P, double* PP7, double** fw
     */
     ComputeBR1(tk_l, bR1, P, stationary, bw, emis, l);
     for (unsigned i = 0; i < tk_l - 1; i++)
-      PP7[i] = PP7[i] + R1[i] * P[7][i] * bR1[i] * fw_bw_norm[l];//<-CHECK ptgi
+      PP7[i] = PP7[i] + R1[i] * P[7][i] * bR1[i];//<-CHECK ptgi
   }
 }
 
