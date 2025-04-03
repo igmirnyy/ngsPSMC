@@ -138,8 +138,8 @@ double qFunction_inner(int tk_l, double pix, int numWind, double** nP, double** 
     double tmpQ = qkFunction(i, pix, numWind, nP, PP, tk_l, esum);
     Q += tmpQ;
   }
-  if (fabs(numWind - 1 - esum) > 0.5)
-    fprintf(stderr, "\t-> POTENTIAL PROBLEM ESUM:%f Q:%f numWind:%d\n", esum, Q, numWind);
+  // if (fabs(numWind - 1 - esum) > 0.5)
+  //   fprintf(stderr, "\t-> POTENTIAL PROBLEM ESUM:%f Q:%f numWind:%d\n", esum, Q, numWind);
   return Q;
 
 }
