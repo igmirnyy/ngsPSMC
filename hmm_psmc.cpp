@@ -70,14 +70,14 @@ double qkFunction(unsigned k, double pix, unsigned numWind, double** nP, double*
     //  fprintf(stderr,"PP[]:%f pix:%f\n",PP[i][k],pix);exit(0);
     expec[i - 1] = PP[i][k];
     //fprintf(stderr,"k:%d expec[%d]:%f\n",k,i,expec[i-1]);
-    npfac[i - 1] = nP[i][k];
+    npfac[i - 1] =log(nP[i][k]);
     if (i != 2 && i != 5)
       esum += expec[i - 1];
 
     if (std::isinf(npfac[i - 1]))
       qi[i - 1] = 0;
     else
-      qi[i - 1] = log(npfac[i - 1]) * expec[i - 1];
+      qi[i - 1] = npfac[i - 1] * expec[i - 1];
 
   }
 
