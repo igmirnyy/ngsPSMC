@@ -26,9 +26,6 @@ void ComputeBR1(int tk_l, double* bR1, double** P, double** bw, double** emis, i
 
 void ComputeBR1(int tk_l, double* bR1, double** P, double* stationary, double** bw, double** emis, int w) {
   bR1[tk_l - 1] = 0;
-  double tmp_denom = 0.0;
-  for (int i = 0; i < tk_l - 1; i++)
-    tmp_denom += P[5][i];
   for (int i = tk_l - 2; i >= 0; i--) {
     bR1[i] = bR1[i + 1] * P[0][i + 1] + bw[i + 1][w + 1] * emis[i + 1][w + 1] * stationary[i + 1];
     bR1[i] = bR1[i] / P[0][i];
@@ -93,16 +90,14 @@ double addProtect2(double a, double b) {
 }
 
 
-void ComputeP11(unsigned numWin, int tk_l, double* P1, double* PP1, double** fw, double** bw, double* fw_bw_norm,double* workspace, double** emis) {
+void ComputeP11(unsigned numWin, int tk_l, double* P1, double* PP1, double** fw, double** bw, double* fw_bw_norm, double** emis) {
   for (unsigned i = 0; i < tk_l; i++) {
-    workspace[0] = 0;
     PP1[i] = 0;
     for (unsigned l = 1; l < numWin; l++) {
       //      fprintf(stderr,"l:%d\n",l);
       //fprintf(stderr,"fw[][]:%f\n",fw[i][l]);
       //fprintf(stderr,"fw[][]:%f\n",bw[i][l]);
-      workspace[l] = fw[i][l] * P1[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
-      PP1[i] += workspace[l];
+      PP1[i] +=  fw[i][l] * P1[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
       //NOTE: In appendix of K.H. paper it seems to be an extra emission probability for site l+1, it is already inside bw[]
     }
 
@@ -126,7 +121,7 @@ void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw
     }
 
     for (unsigned i = 1; i < tk_l; i++)
-      PP2[i] = PP2[i] + R2[i - 1] * P[2][i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];//CHECK
+      PP2[i] += R2[i - 1] * P[2][i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];//CHECK
   }
 }
 
@@ -153,15 +148,13 @@ void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw
 }
 
 
-void ComputeP44(unsigned numWind, int tk_l, double* P4, double* PP4, double** fw, double** bw, double* fw_bw_norm,double* workspace, double** emis) {
+void ComputeP44(unsigned numWind, int tk_l, double* P4, double* PP4, double** fw, double** bw, double* fw_bw_norm, double** emis) {
 
   for (unsigned i = 0; i < tk_l; i++) {
-    workspace[0] = 0;
     PP4[i] = 0;
     //    int ntot=0;
     for (unsigned l = 1; l < numWind; l++) {
-      workspace[l] = fw[i][l] * P4[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
-      PP4[i] += workspace[l];
+      PP4[i] += fw[i][l] * P4[i] * bw[i][l + 1] * emis[i][l + 1] * fw_bw_norm[l];
       //fprintf(stderr,"fw:%f P4:%f bw:%f emis:%f\n",fw[i][l],P4[i],bw[i][l+1],emis[i][l+1] );
       //ntot++;
     }
