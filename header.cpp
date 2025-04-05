@@ -6,6 +6,7 @@
 #include <cassert>
 #include <unistd.h>
 #include "header.h"
+#include <cstdio>
 
 void normalize(double* tmp, size_t len) {
   double s = 0;

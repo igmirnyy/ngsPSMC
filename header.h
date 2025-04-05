@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <htslib/bgzf.h>
 #include <cstring>
-
+#include <cstdio>
 
 void normalize(double* tmp, size_t len);
 size_t fsize(const char* fname);
