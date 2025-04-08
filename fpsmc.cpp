@@ -244,6 +244,7 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, 
   fprintf(stderr, "\t-> Starting Optimization ndim:%d\n", ndim);
 
   double pars[ndim + 1];
+  fprintf(stderr, "\t->rho before%lf", rho);
   pars[0] = rho;
   if (DOSPLINE == 0)
     convert_pattern(epsize, pars + 1, 1);
@@ -302,6 +303,7 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, 
   for (int i = 0;0 && i < ndim;i++)
     fprintf(stderr, "optres[%d]:%f\n", i, pars[i]);
   rho = pars[0];
+  fprintf(stderr, "\t->rho after%lf, pars", rho, pars[0]);
   if (DOSPLINE == 0)
     convert_pattern(pars + 1, epsize, 0);
   else {
