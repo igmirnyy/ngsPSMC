@@ -155,7 +155,7 @@ double qFunction_wrapper(const double* pars, const void* d) {
   //  fprintf(stderr,"quad: %d\n",doQuadratic);//exit(0);
   ncals++;
   double pars2[ops[0].tk_l + 1];
-  pars2[0] = ops[0].rho;
+  pars2[0] = pars[0];
   if (DOSPLINE == 0)
     convert_pattern(pars + 1, pars2 + 1, 0);
   else {
