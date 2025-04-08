@@ -303,7 +303,7 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, 
   for (int i = 0;0 && i < ndim;i++)
     fprintf(stderr, "optres[%d]:%f\n", i, pars[i]);
   rho = pars[0];
-  fprintf(stderr, "\t->rho after%lf, pars", rho, pars[0]);
+  fprintf(stderr, "\t->rho after%lf, pars %lf", rho, pars[0]);
   if (DOSPLINE == 0)
     convert_pattern(pars + 1, epsize, 0);
   else {
