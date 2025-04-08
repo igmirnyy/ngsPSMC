@@ -578,13 +578,13 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
     for (int i = 0;i < tk_l;i++) {
       delete[] d->fw[i];
       delete[] d->bw[i];
+      delete[] d->norm;
       d->fw[i] = new double[windows.size() + 1];
       d->bw[i] = new double[windows.size() + 1];
+      d->norm = new double[windows.size() + 1];
       d->len = windows.size() + 1;
     }
   }
-  delete[] d->norm;
-  d->norm = new double[windows.size() + 1];
   fw = d->fw;
   bw = d->bw;
   norm = d->norm;
