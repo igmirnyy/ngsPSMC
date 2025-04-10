@@ -362,9 +362,9 @@ void fastPSMC::allocate(int tk_l_arg) {
   }
   baumwelch[tk_l] = new double[tk_l];
   for (int i = 0;i < tk_l + 1;i++)
-    for (int j = 0;j < tk_l;j++)
-      baumwelch[i][j] = -777;
-
+  for (int j = 0;j < tk_l;j++)
+  baumwelch[i][j] = -777;
+  if (!doNorm) workspace = new double[numWindows + 1];
   if (index == 0)
     P = new double* [8];
   PP = new double* [8];
@@ -387,7 +387,6 @@ void fastPSMC::allocate(int tk_l_arg) {
       for (int j = 0;j < tk_l;j++)
         trans[i][j] = -888;//placeholder, to spot if something shouldnt be happening;
     }
-    workspace = new double[numWindows];
   }
 
 }
@@ -702,6 +701,7 @@ fastPSMC::~fastPSMC() {
     //delete [] bw[i];
     delete[] baumwelch[i];
   }
+  if (!doNorm) delete[] workspace;
   delete[] baumwelch[tk_l];
   for (int i = 0;i < 8;i++) {
     if (index == 0)
@@ -724,7 +724,6 @@ fastPSMC::~fastPSMC() {
       delete[] trans[i];
     delete[] trans;
   }
-  delete[] workspace;
   if (index == 0)
     delete[] stationary;
 }
