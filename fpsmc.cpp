@@ -17,6 +17,7 @@ extern int nThreads;
 int nChr = 0;
 
 int doQuadratic = 1; //<-only used in qFunction_wrapper
+int doNorm = 1;
 
 int DOSPLINE = 0;
 
@@ -179,9 +180,10 @@ double qFunction_wrapper(const double* pars, const void* d) {
   ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2 + 1, pars2[0]);
   if (doQuadratic) {
     double calc_trans(int, int, double**);
+    double calc_trans_norm(int, int, double**);
     for (int i = 0;i < ops[0].tk_l;i++)
       for (int j = 0;j < ops[0].tk_l;j++)
-        objs[0]->trans[i][j] = calc_trans(i, j, ops[0].nP);
+        objs[0]->trans[i][j] = doNorm?calc_trans_norm(i, j, ops[0].nP): calc_trans(i, j, ops[0].nP);
   }
   //fprintf(stderr,"\t-> calling objective function: remap_l:%d [%d]\n",remap_l,ncals);
   double ret = 0;

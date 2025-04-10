@@ -17,6 +17,7 @@ perpsmc* fastPSMC::readerstructure = NULL;
 //#define __SHOW_TIME__
 
 extern int doQuadratic;
+extern int doNorm;
 
 /*
   Calculate stationary distrubution
@@ -30,15 +31,28 @@ extern int doQuadratic;
 */
 
 void calculate_stationary(int tk_l, double* results, double** P) {
-  results[0] = P[2][0];//fix this
-  for (int i = 1;i < tk_l;i++) {
-    results[i] = P[2][i] * P[0][i - 1];
-  }
-
   double stationary_sum = 0;
-  for (int i = 0;i < tk_l;i++)
-    stationary_sum += results[i];
+  if (doNorm) {
+    results[0] = P[2][0];//fix this
+    for (int i = 1;i < tk_l;i++) {
+      results[i] = P[2][i] * P[0][i - 1];
+    }
 
+    for (int i = 0;i < tk_l;i++)
+      stationary_sum += results[i];
+
+  }
+  else
+  {
+    results[0] = P[2][0];//fix this
+    for (int i = 1;i < tk_l;i++) {
+      results[i] = P[2][i] + P[0][i - 1];
+    }
+
+
+    for (int i = 0;i < tk_l;i++)
+      stationary_sum += exp(results[i]);
+  }
   assert(fabs(1 - stationary_sum) < 1e-6);//check that it sums to one
 }
 
@@ -68,9 +82,14 @@ double qkFunction(unsigned k, double pix, unsigned numWind, double** nP, double*
   //i follows PP index.
   for (int i = 1;i < 8;i++) {
     //  fprintf(stderr,"PP[]:%f pix:%f\n",PP[i][k],pix);exit(0);
-    expec[i - 1] = PP[i][k];
-    //fprintf(stderr,"k:%d expec[%d]:%f\n",k,i,expec[i-1]);
-    npfac[i - 1] =log(nP[i][k]);
+    if (doNorm) {
+      expec[i - 1] = PP[i][k];
+      npfac[i - 1] = log(nP[i][k]);
+    }
+    else {
+      expec[i - 1] = exp(lprod(PP[i][k], -pix));
+      npfac[i - 1] = nP[i][k];
+    }
     if (i != 2 && i != 5)
       esum += expec[i - 1];
 
@@ -106,6 +125,13 @@ void ComputeGlobalProbabilities(double* tk, int tk_l, double** P, const double* 
   ComputeP4(tk, tk_l, P[4], epsize, rho);
   ComputeP7(tk, tk_l, P[7], P[3], epsize, rho);
   ComputeP0(tk_l, P[0], P[5]);
+  if (!doNorm) {
+    for (int i = 0;i < 8;i++) {
+      for (int j = 0; j < tk_l; j++) {
+        P[i][j] = log(P[i][j]);
+      }
+    }
+  }
 
 
 
@@ -153,9 +179,10 @@ double qFunction_inner2(int tk_l, double** nP, double** baumwelch, double** tran
 
 
   double Q = 0;
+  double tmpQ = 0;
   for (unsigned i = 0; i < tk_l; i++) {
     if (baumwelch[tk_l][i] != 0.0) {
-      double tmpQ = log(newstationary[i]) * baumwelch[tk_l][i];
+      tmpQ = doNorm ? log(newstationary[i]) * baumwelch[tk_l][i] : newstationary[i] * baumwelch[tk_l][i];
       Q += tmpQ;
       if (1 && std::isnan(tmpQ)) {
         fprintf(stderr, "\t->[qFunction_inner2] Q[%d]:%e newstat:%e baumwel:%e\n", i, tmpQ, newstationary[i], baumwelch[tk_l][i]);
@@ -167,7 +194,7 @@ double qFunction_inner2(int tk_l, double** nP, double** baumwelch, double** tran
   for (unsigned i = 0; i < tk_l; i++) {
     for (unsigned j = 0; j < tk_l; j++) {
       if (baumwelch[i][j] != 0.0) {
-        double tmpQ = log(trans[i][j]) * baumwelch[i][j];
+        tmpQ = doNorm ? log(trans[i][j]) * baumwelch[i][j] : trans[i][j] * baumwelch[i][j];
         Q += tmpQ;
         if (1 && std::isnan(tmpQ)) {
           fprintf(stderr, "\t->[qFunction_inner2]i:%d j:%d tmpQ:%e trans::%e baumwel:%e\n", i, j, tmpQ, trans[i][j], baumwelch[i][j]);
@@ -185,73 +212,30 @@ double qFunction_inner2(int tk_l, double** nP, double** baumwelch, double** tran
 
 }
 
-void print_fw_bw_log_matrix(const char* fname, double **array, int tk_l, int n_windows){
-  FILE* file = fopen(fname, "w");
-    for (int i = 0; i < tk_l; i++){
-      for (int v = 0; v<n_windows - 1; v++){
-        fprintf(file, "%.10e,", array[i][v]);
-      }
-      fprintf(file, "%.10e\n", array[i][n_windows]);
-    }
-  fclose(file);
-}
 
-void fastPSMC::normalize(double** array, int tk_l, int index, double factor){
-  for(int i = 0; i<tk_l;i++){
+void fastPSMC::normalize(double** array, int tk_l, int index, double factor) {
+  for (int i = 0; i < tk_l;i++) {
     array[i][index] /= factor;
   }
 }
 
-double get_fw_bw_log(double** array, double* norm, int time, int window){
-  return log(array[time][window]) + norm[window];
-}
-void print_fw_bw_log_matrix(const char* fname, double **array, double* norm, int tk_l, int n_windows){
-  FILE* file = fopen(fname, "w");
-    for (int i = 0; i < tk_l; i++){
-      for (int v = 0; v<n_windows - 1; v++){
-        fprintf(file, "%.16f,", get_fw_bw_log(array, norm, i, v));
-      }
-      fprintf(file, "%.16f\n", get_fw_bw_log(array, norm, i, n_windows));
-    }
-  fclose(file);
-}
-void print_P(double** P, int tk_l){
-  FILE* file = fopen("P's.csv", "w");
-  for(int i=0; i<=7; i++){
-    for (int j = 0; j < tk_l - 1; j++){
-       fprintf(file, "%.8f,", P[i][j]);
-    }
-    fprintf(file, "%.8f\n", P[i][tk_l - 1]);
-  }
-  fclose(file);
-}
-void print_emissions(double**emis, int n_windows, int tk_l){
-  FILE* file = fopen("emissions.csv", "w");
-    for (int i = 0; i < tk_l; i++){
-      for (int v = 0; v<n_windows - 1; v++){
-        fprintf(file, "%.16e,", emis[i][v]);
-      }
-      fprintf(file, "%.16e\n", emis[i][n_windows]);
-    }
-  fclose(file);
-}
-void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw, double* fw_bw_norm) {
+
+void fastPSMC::calculate_FW_BW_Probs_norm(double* tk, int tk_l, double* epsize, double** fw, double** bw, double* fw_bw_norm) {
   //we first set the initial fwprobs to stationary distribution
 
   for (int i = 0;i < tk_l;i++) {
     fw[i][0] = stationary[i];
-    //      fprintf(stderr,"stationary[%d]: %f\n",i,stationary[i]);
   }
   //we now loop over windows.
   //v=0 is above and is the initial distribution, we therefore plug in at v+1
   double norm = 0, total_norm = 0;
   fw_bw_norm[0] = 1;
   for (int v = 0;v < windows.size();v++) {
-    ComputeRs(v, fw, 0);//<-prepare R1,R2
+    ComputeRs_norm(v, fw);//<-prepare R1,R2
     fw[0][v + 1] = (fw[0][v] * (P[1][0] + P[4][0]) + R1[0] * P[3][0]) * emis[0][v + 1];
     norm = fw[0][v + 1];
-    for (unsigned i = 1; i < tk_l; i++){
-      fw[i][v + 1] = (fw[i][v] * (P[1][i] + P[4][i])+ R2[i - 1] * P[2][i] + R1[i] * P[3][i]) * emis[i][v + 1];
+    for (unsigned i = 1; i < tk_l; i++) {
+      fw[i][v + 1] = (fw[i][v] * (P[1][i] + P[4][i]) + R2[i - 1] * P[2][i] + R1[i] * P[3][i]) * emis[i][v + 1];
       norm += fw[i][v + 1];
     }
     normalize(fw, tk_l, v + 1, norm);
@@ -262,7 +246,7 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
   pix = 0;
   double tmp[tk_l];
   for (int i = 0;i < tk_l;i++) {
-   pix += fw[i][windows.size()];
+    pix += fw[i][windows.size()];
   }
   pix = log(pix) + total_norm;
 
@@ -277,7 +261,7 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
 
   //we plug in values at v-1, therefore we break at v==1
   for (int v = windows.size();v > 0;v--) {
-    ComputeRs(v, bw, 1);//<-prepare R1,R2
+    ComputeRs_norm(v, bw);//<-prepare R1,R2
     bw[0][v - 1] = (bw[0][v] * (P[1][0] + P[4][0]) + R1[0] * P[3][0]) * emis[0][v - 1];
     bw[0][v] /= stationary[0];
     bw[0][v] /= emis[0][v];
@@ -291,22 +275,70 @@ void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, doubl
     normalize(bw, tk_l, v - 1, fw_bw_norm[v - 1]);
   }
 
-  for (int i = 0;i < tk_l;i++){
+  for (int i = 0;i < tk_l;i++) {
     bw[i][0] /= stationary[i];
     if (std::isnan(bw[i][0])) bw[i][0] = 0;
 
   }
-  // print_fw_bw_log_matrix("forward.csv", fw, tk_l, windows.size());
-  // print_fw_bw_log_matrix("backward.csv", bw, tk_l, windows.size());
-  // exit(0);
   bwllh = 0;
   for (int i = 0;i < tk_l;i++)
     bwllh += bw[i][1] * stationary[i] * emis[i][1];
   bwllh = log(bwllh) + total_norm;
   assert(!std::isnan(bwllh));
-  // print_fw_bw_log_matrix("forward.csv", fw,  tk_l, windows.size());
-  // print_fw_bw_log_matrix("backward.csv", bw,  tk_l, windows.size());
-  // exit(0);
+}
+
+void fastPSMC::calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw) {
+  //we first set the initial fwprobs to stationary distribution
+  for (int i = 0;i < tk_l;i++) {
+    fw[i][0] = stationary[i];
+    //      fprintf(stderr,"stationary[%d]: %f\n",i,stationary[i]);
+  }
+  //we now loop over windows.
+  //v=0 is above and is the initial distribution, we therefore plug in at v+1
+  for (int v = 0;v < windows.size();v++) {
+    ComputeRs(v, fw);//<-prepare R1,R2
+    fw[0][v + 1] = addProtect3(lprod(fw[0][v], P[1][0]), lprod(R1[0], P[3][0]), lprod(fw[0][v], P[4][0])) + emis[0][v + 1];
+    for (unsigned i = 1; i < tk_l; i++)
+      fw[i][v + 1] = addProtect4(lprod(fw[i][v], P[1][i]), lprod(R2[i - 1], P[2][i]), lprod(R1[i], P[3][i]), lprod(fw[i][v], P[4][i])) + emis[i][v + 1];
+
+  }
+
+  double tmp[tk_l];
+  for (int i = 0;i < tk_l;i++) {
+    tmp[i] = fw[i][windows.size()];
+  }
+  pix = addProtectN(tmp, tk_l);
+
+  assert(!std::isnan(pix));
+  fwllh = pix;
+
+  //now do backward algorithm
+  //initialize by stationary
+  for (int i = 0;i < tk_l;i++)
+    bw[i][windows.size()] = lprod(stationary[i], emis[i][windows.size()]);
+
+
+  //we plug in values at v-1, therefore we break at v==1
+  for (int v = windows.size();v > 0;v--) {
+    ComputeRs(v, bw);//<-prepare R1,R2
+
+    bw[0][v - 1] = addProtect3(lprod(bw[0][v], P[1][0]), lprod(R1[0], P[3][0]), lprod(bw[0][v], P[4][0])) + emis[0][v - 1];
+    bw[0][v] -= lprod(stationary[0], emis[0][v]);
+    for (unsigned i = 1; i < tk_l; i++) {
+      bw[i][v - 1] = addProtect4(lprod(bw[i][v], P[1][i]), lprod(R2[i - 1], P[2][i]), lprod(R1[i], P[3][i]), lprod(bw[i][v], P[4][i])) + emis[i][v - 1];
+      bw[i][v] -= lprod(stationary[i], emis[i][v]);
+    }
+  }
+
+  for (int i = 0;i < tk_l;i++)
+    bw[i][0] -= stationary[i];
+
+
+  for (int i = 0;i < tk_l;i++)
+    tmp[i] = bw[i][1] + stationary[i] + emis[i][1];
+  double tmptmp = addProtectN(tmp, tk_l);
+  assert(!std::isnan(tmptmp));
+  bwllh = tmptmp;
 
 }
 
@@ -432,7 +464,7 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
     assert(windows[v].from <= windows[v].to);
     //   fprintf(stderr,"v:%d from:%d to:%d\n",v,windows[v].from,windows[v].to);
     double norm = log(0);
-    
+
     for (int j = 0;j < tk_l;j++) {//for each interval/state
       emis[j][v + 1] = 0;
 
@@ -477,23 +509,44 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
           exit(0);
         }
       }
-      norm = norm > emis[j][v + 1]? norm: emis[j][v + 1];
+      norm = norm > emis[j][v + 1] ? norm : emis[j][v + 1];
     }
-    for (int j = 0;j < tk_l;j++) {
-      emis[j][v+1] = exp(emis[j][v + 1] - norm);
+    if (doNorm) {
+      for (int j = 0;j < tk_l;j++) {
+        emis[j][v + 1] = exp(emis[j][v + 1] - norm);
+      }
     }
   }
 }
 
-void ComputePii(unsigned numWind, int tk_l, double** P, double** PP, double** fw, double** bw, double* fw_bw_norm, double* stationary, double** emis) {
+void ComputePii_norm(unsigned numWind, int tk_l, double** P, double** PP, double** fw, double** bw, double* fw_bw_norm, double* stationary, double** emis) {
 
-  ComputeP11(numWind, tk_l, P[1], PP[1], fw, bw,fw_bw_norm, emis);
-  ComputeP22(numWind, tk_l, P, PP[2], fw, bw,fw_bw_norm, emis);
-  ComputeP33(numWind, tk_l, P[3], PP[3], fw, bw,fw_bw_norm, emis);
-  ComputeP44(numWind, tk_l, P[4], PP[4], fw, bw,fw_bw_norm, emis);
-  ComputeP55(numWind, tk_l, P, PP[5], fw, bw,fw_bw_norm, stationary, emis);
-  ComputeP66(numWind, tk_l, P, PP[6], fw, bw,fw_bw_norm, stationary, emis);
-  ComputeP77(numWind, tk_l, P, PP[7], fw, bw,fw_bw_norm, stationary, emis);
+  ComputeP11_norm(numWind, tk_l, P[1], PP[1], fw, bw, fw_bw_norm, emis);
+  ComputeP22_norm(numWind, tk_l, P, PP[2], fw, bw, fw_bw_norm, emis);
+  ComputeP33_norm(numWind, tk_l, P[3], PP[3], fw, bw, fw_bw_norm, emis);
+  ComputeP44_norm(numWind, tk_l, P[4], PP[4], fw, bw, fw_bw_norm, emis);
+  ComputeP55_norm(numWind, tk_l, P, PP[5], fw, bw, fw_bw_norm, stationary, emis);
+  ComputeP66_norm(numWind, tk_l, P, PP[6], fw, bw, fw_bw_norm, stationary, emis);
+  ComputeP77_norm(numWind, tk_l, P, PP[7], fw, bw, fw_bw_norm, stationary, emis);
+
+
+  for (int p = 1; 0 && p < 8; p++) {
+    for (int i = 0;i < tk_l;i++) {
+      assert(exp(PP[p][i]) >= 0 && exp(PP[p][i]) <= 1);
+    }
+  }
+
+}
+
+void ComputePii(unsigned numWind, int tk_l, double** P, double** PP, double** fw, double** bw, double* stationary, double** emis) {
+
+  ComputeP11(numWind, tk_l, P[1], PP[1], fw, bw, emis);
+  ComputeP22(numWind, tk_l, P, PP[2], fw, bw, emis);
+  ComputeP33(numWind, tk_l, P[3], PP[3], fw, bw, emis);
+  ComputeP44(numWind, tk_l, P[4], PP[4], fw, bw, emis);
+  ComputeP55(numWind, tk_l, P, PP[5], fw, bw, stationary, emis);
+  ComputeP66(numWind, tk_l, P, PP[6], fw, bw, stationary, emis);
+  ComputeP77(numWind, tk_l, P, PP[7], fw, bw, stationary, emis);
 
 
   for (int p = 1; 0 && p < 8; p++) {//CHECK IF THIS SHOULD BE RENAABLED
@@ -507,8 +560,8 @@ void ComputePii(unsigned numWind, int tk_l, double** P, double** PP, double** fw
 }
 
 
-//results is in baumwelch matrix the content is not in log but normal space
-void ComputeBaumWelch(unsigned numWind, int tk_l, double** fw, double** bw, double* norm, double** emis, double** trans, double** baumwelch, double pix) {
+
+void ComputeBaumWelch_norm(unsigned numWind, int tk_l, double** fw, double** bw, double* norm, double** emis, double** trans, double** baumwelch, double pix) {
   for (int i = 0;i < tk_l;i++) {
     for (int j = 0;j < tk_l;j++) {
       double tmp = 0;
@@ -523,8 +576,24 @@ void ComputeBaumWelch(unsigned numWind, int tk_l, double** fw, double** bw, doub
 
   for (int i = 0; i < tk_l; i++)
     baumwelch[tk_l][i] = fw[i][1] * bw[i][1] * norm[1];
-  // print_fw_bw_log_matrix("baumwell.csv", baumwelch, tk_l, tk_l);
-  // exit(0);
+}
+//results is in baumwelch matrix the content is not in log but normal space
+//results is in baumwelch matrix the content is not in log but normal space
+void ComputeBaumWelch(unsigned numWind, int tk_l, double** fw, double** bw, double** emis, double** trans, double** baumwelch, double pix) {
+  for (int i = 0;i < tk_l;i++) {
+    for (int j = 0;j < tk_l;j++) {
+      double tmp = log(0);
+      for (int w = 1;w < numWind;w++) {
+        tmp = addProtect2(tmp, fw[i][w] + trans[i][j] + emis[j][w + 1] + bw[j][w + 1]);
+        if (0 && w > 20)
+          exit(0);
+      }
+      baumwelch[i][j] = exp(tmp - pix);
+    }
+  }
+  for (int i = 0; i < tk_l; i++)
+    baumwelch[tk_l][i] = exp(fw[i][1] + bw[i][1] - pix);
+  // print_fw_bw_log_matrix("baumwell_from_log.csv", baumwelch, tk_l, tk_l);
 }
 
 //should only be run once, since calculates 
@@ -551,12 +620,12 @@ void fastPSMC::make_hmm_pre(double* tk, int tk_l, double* epsize, double theta, 
   if (doQuadratic) {
     for (int i = 0;i < tk_l;i++)
       for (int j = 0;j < tk_l;j++)
-        trans[i][j] = calc_trans(i, j, P);
+        trans[i][j] = doNorm ? calc_trans_norm(i, j, P) : calc_trans(i, j, P);
   }
 }
 
 double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw_bw* d) {
-  
+
   //prepare probs
   if (emis == NULL) {
     emis = new double* [tk_l];
@@ -578,10 +647,12 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
     for (int i = 0;i < tk_l;i++) {
       delete[] d->fw[i];
       delete[] d->bw[i];
-      delete[] d->norm;
       d->fw[i] = new double[windows.size() + 1];
       d->bw[i] = new double[windows.size() + 1];
-      d->norm = new double[windows.size() + 1];
+      if (doNorm) {
+        delete[] d->norm;
+        d->norm = new double[windows.size() + 1];
+      }
       d->len = windows.size() + 1;
     }
   }
@@ -589,73 +660,33 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
   bw = d->bw;
   norm = d->norm;
 
-  calculate_FW_BW_Probs(tk, tk_l, epsize, fw, bw, norm);
+  if (doNorm) {
+    calculate_FW_BW_Probs_norm(tk, tk_l, epsize, fw, bw, norm);
 
 
-  if (doQuadratic == 0)
-    ComputePii(windows.size(), tk_l, P, PP, fw, bw, norm, stationary, emis);
-  else
-    ComputeBaumWelch(windows.size(), tk_l, fw, bw, norm, emis, trans, baumwelch, pix);
-
- #if 0
-  for (int i = 0;i < tk_l;i++) {
-    fprintf(stderr, "baum[%d,] ", i);
-    for (int j = 0;j < tk_l;j++)
-      fprintf(stderr, ",%f ", baumwelch[i][j]);
-    fprintf(stderr, "\n");
-  }
- #endif
-
-#if 0
-  for (int i = 0;i < tk_l;i++) {
-    fprintf(stderr, "trans[%d,] ", i);
-    for (int j = 0;j < tk_l;j++)
-      fprintf(stderr, ",%f:%f ", trans[i][j], exp(trans[i][j]));
-    fprintf(stderr, "\n");
-  }
-#endif
-
-#if 0
-  double E5 = baumwelch[2][2] / exp(trans[2][2]) * exp(P[7][0]) * exp(P[5][1]) * exp(P[2][2]) + baumwelch[0][2] + baumwelch[1][2] / exp(trans[1][2]) * exp(P[7][0]) * exp(P[5][1]) * exp(P[2][2]);
-  double E6 = baumwelch[1][2] / exp(trans[1][2]) * exp(P[6][1]) * exp(P[2][2]);
-  double E7 = baumwelch[2][2] / exp(trans[2][2]) * exp(P[7][1]) * exp(P[2][2]);
-  fprintf(stderr, "E5: %f\n", E5);
-  fprintf(stderr, "E6: %f\n", E6);
-  fprintf(stderr, "E7: %f\n", E7);
-  for (int at = 0;at < 3;at++) {
-    double E1 = baumwelch[at][at] / exp(trans[at][at]) * exp(P[1][at]);
-    fprintf(stderr, "E1[%d]: %f\n", at, E1);
-  }
-
-#endif
-
-
-  /*for (int i = 0; i < tk_l; i++)
-    fprintf(stderr, "st[%d] = %f\t", i, stationary[i]);
-  fprintf(stderr, "\n");
-
-
-  for(int p=1;p<8;p++){//CHECK IF THIS SHOULD BE RENAABLED
-    for(int i=0;i<tk_l;i++){
-      fprintf(stderr, "P[%d][%d] = %f\t", p, i, P[p][i]);
-     // assert(exp(PP[p][i])>=0&&exp(PP[p][i])<=1);
+    if (doQuadratic == 0) {
+      ComputePii_norm(windows.size(), tk_l, P, PP, fw, bw, norm, stationary, emis);
+      qval = qFunction_inner(tk_l, pix, windows.size(), P, PP);
     }
-  fprintf(stderr, "\n");
+    else {
+      ComputeBaumWelch_norm(windows.size(), tk_l, fw, bw, norm, emis, trans, baumwelch, pix);
+      qval = qFunction_inner2(tk_l, P, baumwelch, trans);
+    }
+  }
+  else {
+    calculate_FW_BW_Probs(tk, tk_l, epsize, fw, bw);
+
+
+    if (doQuadratic == 0) {
+      ComputePii(windows.size(), tk_l, P, PP, fw, bw, stationary, emis);
+      qval = qFunction_inner(tk_l, pix, windows.size(), P, PP);
+    }
+    else {
+      ComputeBaumWelch(windows.size(), tk_l, fw, bw, emis, trans, baumwelch, pix);
+      qval = qFunction_inner2(tk_l, P, baumwelch, trans);
+    }
   }
 
-  for(int p=1;p<8;p++){//CHECK IF THIS SHOULD BE RENAABLED
-    for(int i=0;i<tk_l;i++){
-      fprintf(stderr, "PP[%d][%d] = %f\t", p, i, exp(PP[p][i]-pix));
-     // assert(exp(PP[p][i])>=0&&exp(PP[p][i])<=1);
-    }
-  fprintf(stderr, "\n");
-  }*/
-
-  //no need to recompute P. But we fix this later;
-  if (doQuadratic == 0)
-    qval = qFunction_inner(tk_l, pix, windows.size(), P, PP);
-  else
-    qval = qFunction_inner2(tk_l, P, baumwelch, trans);
   return qval;
 }
 
