@@ -387,6 +387,7 @@ void fastPSMC::allocate(int tk_l_arg) {
       for (int j = 0;j < tk_l;j++)
         trans[i][j] = -888;//placeholder, to spot if something shouldnt be happening;
     }
+    workspace = new double[numWindows];
   }
 
 }
@@ -538,12 +539,12 @@ void ComputePii_norm(unsigned numWind, int tk_l, double** P, double** PP, double
 
 }
 
-void ComputePii(unsigned numWind, int tk_l, double** P, double** PP, double** fw, double** bw, double* stationary, double** emis) {
+void ComputePii(unsigned numWind, int tk_l, double** P, double** PP, double** fw, double** bw, double* workspace, double* stationary, double** emis) {
 
-  ComputeP11(numWind, tk_l, P[1], PP[1], fw, bw, emis);
+  ComputeP11(numWind, tk_l, P[1], PP[1], fw, bw, workspace, emis);
   ComputeP22(numWind, tk_l, P, PP[2], fw, bw, emis);
   ComputeP33(numWind, tk_l, P[3], PP[3], fw, bw, emis);
-  ComputeP44(numWind, tk_l, P[4], PP[4], fw, bw, emis);
+  ComputeP44(numWind, tk_l, P[4], PP[4], fw, bw, workspace, emis);
   ComputeP55(numWind, tk_l, P, PP[5], fw, bw, stationary, emis);
   ComputeP66(numWind, tk_l, P, PP[6], fw, bw, stationary, emis);
   ComputeP77(numWind, tk_l, P, PP[7], fw, bw, stationary, emis);
@@ -678,7 +679,7 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
 
 
     if (doQuadratic == 0) {
-      ComputePii(windows.size(), tk_l, P, PP, fw, bw, stationary, emis);
+      ComputePii(windows.size(), tk_l, P, PP, fw, bw, workspace, stationary, emis);
       qval = qFunction_inner(tk_l, pix, windows.size(), P, PP);
     }
     else {
@@ -723,6 +724,7 @@ fastPSMC::~fastPSMC() {
       delete[] trans[i];
     delete[] trans;
   }
+  delete[] workspace;
   if (index == 0)
     delete[] stationary;
 }

@@ -9,10 +9,10 @@ void ComputeP44_norm(unsigned numWind, int tk_l, double* P4, double* PP4, double
 void ComputeP55_norm(unsigned numWind, int tk_l, double** P, double* PP5, double** fw, double** bw,double* fw_bw_norm,  double* stationary, double** emis);
 void ComputeP66_norm(unsigned numWind, int tk_l, double** P, double* PP6, double** fw, double** bw,double* fw_bw_norm,  double* stationary, double** emis);
 void ComputeP77_norm(unsigned numWind, int tk_l, double** P, double* PP7, double** fw, double** bw,double* fw_bw_norm,  double* stationary, double** emis);
-void ComputeP11(unsigned numWin, int tk_l, double* P1, double* PP1, double** fw, double** bw,  double** emis);
+void ComputeP11(unsigned numWin, int tk_l, double* P1, double* PP1, double** fw, double** bw, double* workspace,  double** emis);
 void ComputeP22(unsigned numWind, int tk_l, double** P, double* PP2, double** fw, double** bw,  double** emis);
 void ComputeP33(unsigned numWind, int tk_l, double* P3, double* PP3, double** fw, double** bw,  double** emis);
-void ComputeP44(unsigned numWind, int tk_l, double* P4, double* PP4, double** fw, double** bw,  double** emis);
+void ComputeP44(unsigned numWind, int tk_l, double* P4, double* PP4, double** fw, double** bw,  double* workspace, double** emis);
 void ComputeP55(unsigned numWind, int tk_l, double** P, double* PP5, double** fw, double** bw,  double* stationary, double** emis);
 void ComputeP66(unsigned numWind, int tk_l, double** P, double* PP6, double** fw, double** bw,  double* stationary, double** emis);
 void ComputeP77(unsigned numWind, int tk_l, double** P, double* PP7, double** fw, double** bw,  double* stationary, double** emis);
