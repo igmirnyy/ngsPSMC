@@ -155,12 +155,11 @@ static int ncals = 0;
 double qFunction_wrapper(const double* pars, const void* d) {
   //  fprintf(stderr,"quad: %d\n",doQuadratic);//exit(0);
   ncals++;
-  double pars2[ops[0].tk_l + 1];
-  pars2[0] = pars[0];
+  double pars2[ops[0].tk_l];
   if (DOSPLINE == 0)
-    convert_pattern(pars + 1, pars2 + 1, 0);
+    convert_pattern(pars, pars2, 0);
   else {
-    spl->convert(pars + 1, pars2 + 1, 0);
+    spl->convert(pars, pars2, 0);
     for (int i = 0;i < ops[0].tk_l;i++) {
       if (pars2[i] < 0)
         return -1000000000;
@@ -177,7 +176,7 @@ double qFunction_wrapper(const double* pars, const void* d) {
     fprintf(stderr, "after scaling:%d %f\n", i, pars2[i]);
   //  exit(0);
 
-  ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2 + 1, pars2[0]);
+  ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2 + 1, ops[0].rho);
   if (doQuadratic) {
     double calc_trans(int, int, double**);
     double calc_trans_norm(int, int, double**);
@@ -245,34 +244,33 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, 
   time_t t2 = time(NULL);
   fprintf(stderr, "\t-> Starting Optimization ndim:%d\n", ndim);
 
-  double pars[ndim + 1];
-  pars[0] = rho;
+  double pars[ndim];
   if (DOSPLINE == 0)
-    convert_pattern(epsize, pars + 1, 1);
+    convert_pattern(epsize, pars, 1);
   else {
-    spl->convert(epsize, pars + 1, 1);
+    spl->convert(epsize, pars, 1);
   }
 
   //set bounds
-  int nbd[ndim + 1];
-  double lbd[ndim + 1];
-  double ubd[ndim + 1];
+  int nbd[ndim];
+  double lbd[ndim];
+  double ubd[ndim];
   if (DOSPLINE == 0) {
-    for (int i = 0;i < ndim + 1;i++) {
+    for (int i = 0;i < ndim;i++) {
       nbd[i] = 2;
       lbd[i] = 0.0001;
       ubd[i] = 1000;//PSMC_T_INF;
     }
   }
   else {
-    for (int i = 0;i < ndim + 1 / 2;i++) {
+    for (int i = 0;i < ndim / 2;i++) {
 
       nbd[i] = 2;
       lbd[i] = 0.0001;
       ubd[i] = 1000;//PSMC_T_INF;
       //      fprintf(stderr,"fv[%d][%d/%d] bd[%d]:%d:(%f,%f)\n",at++,i,ndim/2,i,nbd[i],lbd[i],ubd[i]);
     }
-    for (int i = ndim / 2;i < ndim + 1;i++) {
+    for (int i = ndim / 2;i < ndim;i++) {
       nbd[i] = 0;
       lbd[i] = -1000;
       ubd[i] = 1000;//PSMC_T_INF;
@@ -303,11 +301,10 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, 
   ret_qval = max_qval;
   for (int i = 0;0 && i < ndim;i++)
     fprintf(stderr, "optres[%d]:%f\n", i, pars[i]);
-  rho = pars[0];
   if (DOSPLINE == 0)
-    convert_pattern(pars + 1, epsize, 0);
+    convert_pattern(pars, epsize, 0);
   else {
-    spl->convert(pars + 1, epsize, 0);
+    spl->convert(pars, epsize, 0);
   }
   fprintf(stderr, "\t-> [RUNOPTIM3 TIME]:%s cpu-time used =  %.2f sec \n", __func__, (float)(clock() - t) / CLOCKS_PER_SEC);
   fprintf(stderr, "\t-> [RUNOPTIM3 Time]:%s walltime used =  %.2f sec \n", __func__, (float)(time(NULL) - t2));
