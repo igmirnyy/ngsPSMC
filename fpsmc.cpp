@@ -378,7 +378,7 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
 //tk_l is dimension of transistionsspace ndim is size of dimension
 //tk is tk_l long, epsize is tk_l long
-void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt) {
+void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt, int blocksize) {
 
   int at_it = 0;
   extern int SIG_COND;
@@ -396,7 +396,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
   fprintf(stdout, "MT\t%f\n", maxt);
   fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
   for (int i = 0;i < tk_l;i++)//this prints out all
-    fprintf(stdout, "RS\t%d\t%f\t%f\t1000000.0\t1000000.0\t1000000.0\n", i, tk[i], epsize[i]);
+    fprintf(stdout, "RS\t%d\t%f\t%f\t1000000.0\t1000000.0\t1000000.0\n", i, tk[i], epsize[i] * blocksize);
   fprintf(stdout, "PA\t%s %.9f %.9f 666.666666666", pattern, theta, rho);
   int at = 0;
   //
@@ -609,7 +609,7 @@ int psmc_wrapper(args* pars, int blocksize) {
   stoptimer(datareader_timer);
   fprintf(stdout, "MM\tfilereading took: (wall(min),cpu(min)):(%f,%f)\n", datareader_timer.tids[1],
     datareader_timer.tids[0]);
-  main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t);
+  main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t, pars->blocksize);
 
   for (int i = 0; i < nChr; i++)
     delete objs[i];
