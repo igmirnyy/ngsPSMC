@@ -396,7 +396,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
   fprintf(stdout, "MT\t%f\n", maxt);
   fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
   for (int i = 0;i < tk_l;i++)//this prints out all
-    fprintf(stdout, "RS\t%d\t%f\t%f\t1000000.0\t1000000.0\t1000000.0\n", i, tk[i], epsize[i] / blocksize);
+    fprintf(stdout, "RS\t%d\t%f\t%f\t1000000.0\t1000000.0\t1000000.0\n", i, tk[i], epsize[i] * blocksize);
   fprintf(stdout, "PA\t%s %.9f %.9f 666.666666666", pattern, theta, rho);
   int at = 0;
   //
@@ -439,7 +439,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
     fprintf(stdout, "MT\t%f\n", maxt);
     fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
     for (int i = 0;i < tk_l;i++)//this prints out all
-      fprintf(stdout, "RS\t%d\t%f\t%f\t1000000.0\t1000000.0\t1000000.0\n", i, tk[i], epsize[i]);
+      fprintf(stdout, "RS\t%d\t%f\t%f\t1000000.0\t1000000.0\t1000000.0\n", i, tk[i], epsize[i] * blocksize);
     fprintf(stdout, "PA\t%s %.9f %.9f 666.666666666", pattern, theta, rho);
     int at = 0;
     //
