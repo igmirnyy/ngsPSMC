@@ -380,7 +380,7 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
 //tk_l is dimension of transistionsspace ndim is size of dimension
 //tk is tk_l long, epsize is tk_l long
-void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt, int output_theta) {
+void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt, double output_theta) {
 
   int at_it = 0;
   extern int SIG_COND;
