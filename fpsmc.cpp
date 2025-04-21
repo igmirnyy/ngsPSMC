@@ -380,7 +380,7 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
 //tk_l is dimension of transistionsspace ndim is size of dimension
 //tk is tk_l long, epsize is tk_l long
-void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt, int blocksize) {
+void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt, int output_theta) {
 
   int at_it = 0;
   extern int SIG_COND;
@@ -394,7 +394,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
   fprintf(stdout, "LK\t%f\n", ret_llh0);
   fprintf(stdout, "QD\t%f -> %f\n", 0.0, 0.0);
   fprintf(stdout, "RI\t?\n");
-  fprintf(stdout, "TR\t%f\t%f\n", theta * blocksize * 2, rho);
+  fprintf(stdout, "TR\t%f\t%f\n", output_theta, rho);
   fprintf(stdout, "MT\t%f\n", maxt);
   fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
   for (int i = 0;i < tk_l;i++)//this prints out all
@@ -437,7 +437,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
     ret_qval0 = qval_hmm;
     //    exit(0);
     fprintf(stdout, "RI\t?\n");
-    fprintf(stdout, "TR\t%f\t%f\n", theta * blocksize * 2, rho);
+    fprintf(stdout, "TR\t%f\t%f\n", output_theta, rho);
     fprintf(stdout, "MT\t%f\n", maxt);
     fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
     for (int i = 0;i < tk_l;i++)//this prints out all
@@ -492,9 +492,10 @@ int psmc_wrapper(args* pars, int blocksize) {
     make_remapper(pars->par);
 
   //adjust theta:
+  double output_theta = pars->par->TR[0];
   pars->par->TR[0] = pars->par->TR[0] / 2.0;
   fprintf(stderr, "\t-> p->perc->version:%d (one is gls, otherwise fasta)\n", pars->perc->version);
-  if (pars->perc->version == 1) {//if it is gls
+  if (pars->perc->version != 0) {//if it is gls
     fprintf(stderr, "\t-> Adjusing theta with blocksize: %d\n", pars->blocksize);
     pars->par->TR[0] = pars->par->TR[0] / (1.0 * pars->blocksize);
   }
@@ -611,7 +612,7 @@ int psmc_wrapper(args* pars, int blocksize) {
   stoptimer(datareader_timer);
   fprintf(stdout, "MM\tfilereading took: (wall(min),cpu(min)):(%f,%f)\n", datareader_timer.tids[1],
     datareader_timer.tids[0]);
-  main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t, pars->blocksize);
+  main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t, output_theta);
 
   for (int i = 0; i < nChr; i++)
     delete objs[i];
