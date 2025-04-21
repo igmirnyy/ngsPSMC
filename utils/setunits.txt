@@ -1,4 +1,4 @@
-mutRate=1.25e-8
+mutRate=2.5e-8
 binsize=100
 N0=10000
 genTime=29
