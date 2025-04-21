@@ -18,6 +18,7 @@ int nChr = 0;
 
 int doQuadratic = 1; //<-only used in qFunction_wrapper
 int doNorm = 1;
+int optRho = 1;
 
 int DOSPLINE = 0;
 
@@ -156,15 +157,18 @@ double qFunction_wrapper(const double* pars, const void* d) {
   //  fprintf(stderr,"quad: %d\n",doQuadratic);//exit(0);
   ncals++;
   double pars2[ops[0].tk_l + 1];
-  pars2[0] = pars[0];
+  if (optRho){
+    pars2[0] = pars[0];
+    pars += 1;
+  }
   if (DOSPLINE == 0)
-    convert_pattern(pars + 1, pars2 + 1, 0);
+  convert_pattern(pars, pars2 + 1, 0);
   else {
-    spl->convert(pars + 1, pars2 + 1, 0);
+    spl->convert(pars, pars2 + 1, 0);
     for (int i = 0;i < ops[0].tk_l;i++) {
       if (pars2[i] < 0)
-        return -1000000000;
-
+      return -1000000000;
+      
     }
   }
 #if 0
@@ -173,11 +177,9 @@ double qFunction_wrapper(const double* pars, const void* d) {
     fprintf(stderr, "%f,", pars[i]);
   fprintf(stderr, "%f)= ", pars[2 - 1]);
 #endif
-  for (int i = 0;0 && i < ops[0].tk_l;i++)
-    fprintf(stderr, "after scaling:%d %f\n", i, pars2[i]);
   //  exit(0);
 
-  ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2 + 1, pars2[0]);
+  ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2 + 1, optRho? pars2[0] : ops[0].rho);
   if (doQuadratic) {
     double calc_trans(int, int, double**);
     double calc_trans_norm(int, int, double**);
@@ -297,7 +299,7 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, 
   ncals = 0;
   timer opt_timer = starttimer();
   //we are not optimizing llh but qfunction
-  double max_qval = findmax_bfgs(ndim + 1, pars, NULL, qFunction_wrapper, NULL, lbd, ubd, nbd, -1);
+  double max_qval = findmax_bfgs(optRho? ndim + 1: ndim, optRho?pars: pars+1, NULL, qFunction_wrapper, NULL, lbd, ubd, nbd, -1);
   stoptimer(opt_timer);
   fprintf(stdout, "MM\toptimization: (wall(min),cpu(min)):(%f,%f) maxqval:%f\n", opt_timer.tids[1], opt_timer.tids[0], max_qval);
   ret_qval = max_qval;

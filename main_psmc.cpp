@@ -335,6 +335,9 @@ args* getArgs(int argc, char** argv, int dontprint) {
         else if (!strcasecmp(*argv, "-doNorm")) {
             p->doNorm = atoi(*++argv);
         }
+        else if (!strcasecmp(*argv, "-optRho")) {
+            p->optRho = atoi(*++argv);
+        }
         else if (!strcasecmp(*argv, "-r")) {
             p->chooseChr = get_region(*(++argv), p->start, p->stop);
             if (!p->chooseChr)
@@ -359,10 +362,12 @@ args* getArgs(int argc, char** argv, int dontprint) {
         p->doLinear, p->doNorm, p->nChr, p->msstr, p->init_theta, p->init_rho, p->init_max_t);
     extern int doQuadratic;
     extern int doNorm;
+    extern int optRho;
     if (p->doLinear == 0)
         doQuadratic = 1;
     else
         doQuadratic = 0;
+    optRho = p->optRho;
     doNorm = p->doNorm;
     return p;
 }
