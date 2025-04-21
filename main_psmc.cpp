@@ -283,6 +283,7 @@ args* getArgs(int argc, char** argv, int dontprint) {
     p->nThreads = 1;
     p->doLinear = 1;
     p->doNorm = 0;
+    p->optRho = 0;
     p->psmc_infile = NULL;
     p->init = p->init_theta = p->init_rho = p->init_max_t = -1;
     p->init_max_t = 23.861429;

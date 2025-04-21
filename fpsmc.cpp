@@ -394,7 +394,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
   fprintf(stdout, "LK\t%f\n", ret_llh0);
   fprintf(stdout, "QD\t%f -> %f\n", 0.0, 0.0);
   fprintf(stdout, "RI\t?\n");
-  fprintf(stdout, "TR\t%f\t%f\n", theta * blocksize, rho);
+  fprintf(stdout, "TR\t%f\t%f\n", theta * blocksize * 2, rho);
   fprintf(stdout, "MT\t%f\n", maxt);
   fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
   for (int i = 0;i < tk_l;i++)//this prints out all
@@ -437,7 +437,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
     ret_qval0 = qval_hmm;
     //    exit(0);
     fprintf(stdout, "RI\t?\n");
-    fprintf(stdout, "TR\t%f\t%f\n", theta * blocksize, rho);
+    fprintf(stdout, "TR\t%f\t%f\n", theta * blocksize * 2, rho);
     fprintf(stdout, "MT\t%f\n", maxt);
     fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
     for (int i = 0;i < tk_l;i++)//this prints out all
