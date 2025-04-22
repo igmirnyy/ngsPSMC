@@ -5,6 +5,7 @@
 #include <map>
 #include <htslib/bgzf.h>
 #include "fastas.h"
+#include "bcf.h"
 #include "header.h"
 
 //#define GL_AS_CHAR
@@ -31,6 +32,7 @@ typedef struct {
   int version;//1 is gl, otherwise assuming fasta
   char* fname;//input.saf.idx?
   perFasta* pf;
+  perBcf* pb;
 }perpsmc;
 
 perpsmc* perpsmc_init(char* fname, int nChr);
