@@ -102,7 +102,7 @@ int n_seqs, i, rec_id;
 uint64_t mapped, unmapped;
 char* chr;
 const char ** seqnames = bcf_index_seqnames(ret->pb->idx, ret->pb->hdr, &n_seqs);
-for (i =0; i<n_seqs; i++)
+for (i =0; i<n_seqs; i++){
     chr = strdup(seqnames[i]);
     datum d;
     rec_id = bcf_hdr_name2id(ret->pb->hdr, seqnames[i]);
@@ -127,6 +127,7 @@ for (i =0; i<n_seqs; i++)
             chr);
         exit(0);
     }
+ }
 }
 void init_for_psmc(const char * index_fname, FILE* fp, perpsmc* ret, int nChr, int& at){
 size_t clen;
