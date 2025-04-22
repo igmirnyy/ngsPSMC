@@ -9,7 +9,6 @@ perBcf* perBcf_init(const char* fname){
     if (!pb->bcf_file) {
         fprintf(stderr, "Failed to open BCF file: %s\n", fname);
         exit(1);
-        return;
     }
     
     // Read the header
@@ -18,7 +17,6 @@ perBcf* perBcf_init(const char* fname){
         fprintf(stderr, "Failed to read BCF header from file: %s\n", fname);
         bcf_close(pb->bcf_file);
         exit(1);
-        return;
     }
     
     // Load the index
@@ -27,7 +25,6 @@ perBcf* perBcf_init(const char* fname){
         fprintf(stderr, "Failed to read BCF index to file: %s\n", fname);
         bcf_close(pb->bcf_file);
         bcf_hdr_destroy(pb->hdr);
-        return;
         exit(1);
     }
     pb->rec = bcf_init();

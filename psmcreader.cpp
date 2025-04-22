@@ -74,6 +74,131 @@ int psmcversion(const char* fname) {//0 - fasta, 1 - psmc, 2 - vcf/bcf
 }
 
 
+void init_for_fasta(const char* fname, perpsmc* ret, int nChr, int& at){
+    ret->pf = perFasta_init(fname);
+    for (int i = 0; i < faidx_nseq(ret->pf->fai); i++) {
+        if (nChr != -1 && at++ >= nChr)
+            break;
+        char* chr = strdup(faidx_iseq(ret->pf->fai, i));
+        // fprintf(stderr,"\t-> [%s] %d) chr: %s\n",__FUNCTION__,i,chr);
+        datum d;
+        d.nSites = faidx_seq_len(ret->pf->fai, chr);
+        ret->nSites += d.nSites;
+        d.pos = d.saf = 0;
+        myMap::iterator it = ret->mm.find(chr);
+        if (it == ret->mm.end())
+            ret->mm[chr] = d;
+        else {
+            fprintf(stderr,
+                "Problem with chr: %s, key already exists, try to reindex fasta file\n",
+                chr);
+            exit(1);
+        }
+    }
+}
+void init_for_bcf(const char* fname, perpsmc* ret, int nChr, int& at){
+ret->pb = perBcf_init(fname);
+int n_seqs, i, rec_id;
+uint64_t mapped, unmapped;
+char* chr;
+const char ** seqnames = bcf_index_seqnames(ret->pb->idx, ret->pb->hdr, &n_seqs);
+for (i =0; i<n_seqs; i++)
+    chr = strdup(seqnames[i]);
+    datum d;
+    rec_id = bcf_hdr_name2id(ret->pb->hdr, seqnames[i]);
+    if (rec_id >= 0){
+        hts_idx_get_stat(ret->pb->idx, rec_id, &mapped, &unmapped);
+        d.nSites += mapped;
+    }
+    else {
+        fprintf(stderr,
+            "Problem with chr: %s, try to reindex bcf file\n",
+            chr);
+        exit(1);
+    }
+    ret->nSites += d.nSites;
+    d.pos = d.saf = 0;
+    myMap::iterator it = ret->mm.find(chr);
+    if (it == ret->mm.end())
+        ret->mm[chr] = d;
+    else {
+        fprintf(stderr,
+            "Problem with chr: %s, key already exists, try to reindex bcf file\n",
+            chr);
+        exit(0);
+    }
+}
+void init_for_psmc(const char * index_fname, FILE* fp, perpsmc* ret, int nChr, int& at){
+size_t clen;
+while (fread(&clen, sizeof(size_t), 1, fp)) {
+    if (nChr != -1 && at++ >= nChr)
+        break;
+    char* chr = (char*)malloc(clen + 1);
+    assert(clen == fread(chr, 1, clen, fp));
+    chr[clen] = '\0';
+
+    datum d;
+    if (1 != fread(&d.nSites, sizeof(size_t), 1, fp)) {
+        fprintf(stderr, "[%s.%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, index_fname);
+        exit(0);
+    }
+    ret->nSites += d.nSites;
+    if (1 != fread(&d.pos, sizeof(int64_t), 1, fp)) {
+        fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, index_fname);
+        exit(0);
+    }
+    if (1 != fread(&d.saf, sizeof(int64_t), 1, fp)) {
+        fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, index_fname);
+        exit(0);
+    }
+
+    myMap::iterator it = ret->mm.find(chr);
+    if (it == ret->mm.end())
+        ret->mm[chr] = d;
+    else {
+        fprintf(stderr,
+            "Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",
+            chr);
+        exit(1);
+    }
+}
+fclose(fp);
+char* base_fname = (char*)calloc(strlen(index_fname) + 100, 1);//that should do it
+base_fname = strncpy(base_fname, index_fname, strlen(index_fname) - 3);
+//  fprintf(stderr,"tmp:%s\n",tmp);
+
+char* gl_fname = (char*)calloc(strlen(base_fname) + 100, 1);//that should do it
+snprintf(gl_fname, strlen(index_fname) + 100, "%sgz", base_fname);
+fprintf(stderr, "\t-> Assuming .psmc.gz file: \'%s\'\n", gl_fname);
+ret->bgzf_gls = strdup(gl_fname);
+BGZF* tmpfp = NULL;
+tmpfp = bgzf_open(ret->bgzf_gls, "r");
+if (tmpfp)
+    my_bgzf_seek(tmpfp, 8, SEEK_SET);
+if (tmpfp && ret->version != psmcversion(gl_fname)) {
+    fprintf(stderr, "\t-> Problem with mismatch of version of %s vs %s %d vs %d\n", index_fname, gl_fname, ret->version,
+        psmcversion(gl_fname));
+    exit(0);
+}
+bgzf_close(tmpfp);
+tmpfp = NULL;
+
+char* pos_fname = gl_fname;
+snprintf(pos_fname, strlen(index_fname) + 100, "%spos.gz", base_fname);
+fprintf(stderr, "\t-> Assuming .psmc.pos.gz: \'%s\'\n", pos_fname);
+ret->bgzf_pos = strdup(pos_fname);
+tmpfp = bgzf_open(ret->bgzf_pos, "r");
+if (tmpfp)
+    my_bgzf_seek(tmpfp, 8, SEEK_SET);
+if (tmpfp && ret->version != psmcversion(pos_fname)) {
+    fprintf(stderr, "Problem with mismatch of version of %s vs %s\n", index_fname, pos_fname);
+    exit(0);
+}
+bgzf_close(tmpfp);
+
+free(base_fname);
+free(gl_fname);
+}
 
 
 
@@ -124,137 +249,59 @@ perpsmc* perpsmc_init(char* fname, int nChr) {
     }
     return ret;
 }
-void init_for_fasta(const char* fname, perpsmc* ret, int nChr, int& at){
-        ret->pf = perFasta_init(fname);
-        for (int i = 0; i < faidx_nseq(ret->pf->fai); i++) {
-            if (nChr != -1 && at++ >= nChr)
-                break;
-            char* chr = strdup(faidx_iseq(ret->pf->fai, i));
-            // fprintf(stderr,"\t-> [%s] %d) chr: %s\n",__FUNCTION__,i,chr);
-            datum d;
-            d.nSites = faidx_seq_len(ret->pf->fai, chr);
-            ret->nSites += d.nSites;
-            d.pos = d.saf = 0;
-            myMap::iterator it = ret->mm.find(chr);
-            if (it == ret->mm.end())
-                ret->mm[chr] = d;
-            else {
-                fprintf(stderr,
-                    "Problem with chr: %s, key already exists, try to reindex fasta file\n",
-                    chr);
-                exit(1);
-            }
-        }
-}
-void init_for_bcf(const char* fname, perpsmc* ret, int nChr, int& at){
-    ret->pb = perBcf_init(fname);
-    int n_seqs, i, rec_id;
-    uint64_t mapped, unmapped;
-    char* chr;
-    const char ** seqnames = bcf_index_seqnames(ret->pb->idx, ret->pb->hdr, &n_seqs);
-    for (i =0; i<n_seqs; i++)
-        chr = strdup(seqnames[i]);
-        datum d;
-        rec_id = bcf_hdr_name2id(ret->pb->hdr, seqnames[i]);
-        if (rec_id >= 0){
-            hts_idx_get_stat(ret->pb->idx, rec_id, &mapped, &unmapped);
-            d.nSites += mapped;
-        }
-        else {
-            fprintf(stderr,
-                "Problem with chr: %s, try to reindex bcf file\n",
-                chr);
-            exit(1);
-        }
-        ret->nSites += d.nSites;
-        d.pos = d.saf = 0;
-        myMap::iterator it = ret->mm.find(chr);
-        if (it == ret->mm.end())
-            ret->mm[chr] = d;
-        else {
-            fprintf(stderr,
-                "Problem with chr: %s, key already exists, try to reindex bcf file\n",
-                chr);
-            exit(0);
-        }
-}
-void init_for_psmc(const char * index_fname, FILE* fp, perpsmc* ret, int nChr, int& at){
-    size_t clen;
-    while (fread(&clen, sizeof(size_t), 1, fp)) {
-        if (nChr != -1 && at++ >= nChr)
-            break;
-        char* chr = (char*)malloc(clen + 1);
-        assert(clen == fread(chr, 1, clen, fp));
-        chr[clen] = '\0';
 
-        datum d;
-        if (1 != fread(&d.nSites, sizeof(size_t), 1, fp)) {
-            fprintf(stderr, "[%s.%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, index_fname);
-            exit(0);
-        }
-        ret->nSites += d.nSites;
-        if (1 != fread(&d.pos, sizeof(int64_t), 1, fp)) {
-            fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, index_fname);
-            exit(0);
-        }
-        if (1 != fread(&d.saf, sizeof(int64_t), 1, fp)) {
-            fprintf(stderr, "[%s->%s():%d] Problem reading data: %s \n", __FILE__, __FUNCTION__, __LINE__, index_fname);
-            exit(0);
-        }
-
-        myMap::iterator it = ret->mm.find(chr);
-        if (it == ret->mm.end())
-            ret->mm[chr] = d;
-        else {
-            fprintf(stderr,
-                "Problem with chr: %s, key already exists, psmc file needs to be sorted. (sort your -rf that you used for input)\n",
-                chr);
-            exit(1);
-        }
-    }
-    fclose(fp);
-    char* base_fname = (char*)calloc(strlen(index_fname) + 100, 1);//that should do it
-    base_fname = strncpy(base_fname, index_fname, strlen(index_fname) - 3);
-    //  fprintf(stderr,"tmp:%s\n",tmp);
-
-    char* gl_fname = (char*)calloc(strlen(base_fname) + 100, 1);//that should do it
-    snprintf(gl_fname, strlen(index_fname) + 100, "%sgz", base_fname);
-    fprintf(stderr, "\t-> Assuming .psmc.gz file: \'%s\'\n", gl_fname);
-    ret->bgzf_gls = strdup(gl_fname);
-    BGZF* tmpfp = NULL;
-    tmpfp = bgzf_open(ret->bgzf_gls, "r");
-    if (tmpfp)
-        my_bgzf_seek(tmpfp, 8, SEEK_SET);
-    if (tmpfp && ret->version != psmcversion(gl_fname)) {
-        fprintf(stderr, "\t-> Problem with mismatch of version of %s vs %s %d vs %d\n", index_fname, gl_fname, ret->version,
-            psmcversion(gl_fname));
-        exit(0);
-    }
-    bgzf_close(tmpfp);
-    tmpfp = NULL;
-
-    char* pos_fname = gl_fname;
-    snprintf(pos_fname, strlen(index_fname) + 100, "%spos.gz", base_fname);
-    fprintf(stderr, "\t-> Assuming .psmc.pos.gz: \'%s\'\n", pos_fname);
-    ret->bgzf_pos = strdup(pos_fname);
-    tmpfp = bgzf_open(ret->bgzf_pos, "r");
-    if (tmpfp)
-        my_bgzf_seek(tmpfp, 8, SEEK_SET);
-    if (tmpfp && ret->version != psmcversion(pos_fname)) {
-        fprintf(stderr, "Problem with mismatch of version of %s vs %s\n", index_fname, pos_fname);
-        exit(0);
-    }
-    bgzf_close(tmpfp);
-
-    free(base_fname);
-    free(gl_fname);
-}
 
 BGZF* bgzf_open_seek(char* fname, int64_t offs) {
     BGZF* ret = NULL;
     ret = bgzf_open(fname, "r");
     my_bgzf_seek(ret, offs, SEEK_SET);
     return ret;
+}
+
+
+void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata ret){
+    double* tmpgls = new double[2 * it->second.nSites];
+    BGZF* bgzf_gls = bgzf_open_seek(pp->bgzf_gls, it->second.saf);
+    BGZF* bgzf_pos = bgzf_open_seek(pp->bgzf_pos, it->second.pos);
+
+    my_bgzf_read(bgzf_pos, ret.pos, sizeof(int) * it->second.nSites);
+    my_bgzf_read(bgzf_gls, tmpgls, 2 * sizeof(double) * it->second.nSites);
+    for (int i = 0;i < it->second.nSites;i++) {
+        ret.gls[i] = log(0);
+        if (tmpgls[2 * i] != tmpgls[2 * i + 1]) {
+            double mmax = std::max(tmpgls[2 * i], tmpgls[2 * i + 1]);
+            double val = std::min(tmpgls[2 * i], tmpgls[2 * i + 1]) - mmax;
+
+            ret.gls[i] = val;
+            if (tmpgls[2 * i] < tmpgls[2 * i + 1])
+                ret.gls[i] = -ret.gls[i];
+
+            //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
+
+        }
+    }
+    delete[] tmpgls;
+    bgzf_close(bgzf_gls);
+    bgzf_close(bgzf_pos);
+}
+
+void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int blockSize){
+    int asdf = it->second.nSites;
+    char* tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);
+    for (int i = 0;i < it->second.nSites;i++) {
+        ret.pos[i] = i * blockSize;
+        //important relates to problems with divide by zero in compuation of  backward probablity
+        //K=het
+        if (tmp[i] == 'K')
+            ret.gls[i] = 500.0;// 0;//het
+        else
+            ret.gls[i] = -500.0;//;//hom
+
+        //ok let me explain. negative means homozygotic and postive means heteroeo. The otherone is always 0.
+
+        //       fprintf(stderr,"%c\n",tmp[i]);
+    }
+    free(tmp);
 }
 
 
@@ -305,50 +352,6 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
     return ret;
 }
 
-void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata ret){
-    double* tmpgls = new double[2 * it->second.nSites];
-    BGZF* bgzf_gls = bgzf_open_seek(pp->bgzf_gls, it->second.saf);
-    BGZF* bgzf_pos = bgzf_open_seek(pp->bgzf_pos, it->second.pos);
-
-    my_bgzf_read(bgzf_pos, ret.pos, sizeof(int) * it->second.nSites);
-    my_bgzf_read(bgzf_gls, tmpgls, 2 * sizeof(double) * it->second.nSites);
-    for (int i = 0;i < it->second.nSites;i++) {
-        ret.gls[i] = log(0);
-        if (tmpgls[2 * i] != tmpgls[2 * i + 1]) {
-            double mmax = std::max(tmpgls[2 * i], tmpgls[2 * i + 1]);
-            double val = std::min(tmpgls[2 * i], tmpgls[2 * i + 1]) - mmax;
-
-            ret.gls[i] = val;
-            if (tmpgls[2 * i] < tmpgls[2 * i + 1])
-                ret.gls[i] = -ret.gls[i];
-
-            //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
-
-        }
-    }
-    delete[] tmpgls;
-    bgzf_close(bgzf_gls);
-    bgzf_close(bgzf_pos);
-}
-
-void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int blockSize){
-    int asdf = it->second.nSites;
-    char* tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);
-    for (int i = 0;i < it->second.nSites;i++) {
-        ret.pos[i] = i * blockSize;
-        //important relates to problems with divide by zero in compuation of  backward probablity
-        //K=het
-        if (tmp[i] == 'K')
-            ret.gls[i] = 500.0;// 0;//het
-        else
-            ret.gls[i] = -500.0;//;//hom
-
-        //ok let me explain. negative means homozygotic and postive means heteroeo. The otherone is always 0.
-
-        //       fprintf(stderr,"%c\n",tmp[i]);
-    }
-    free(tmp);
-}
 
 double pl_to_gl(double pl) {
     return exp(log(10) * -pl / 10);
