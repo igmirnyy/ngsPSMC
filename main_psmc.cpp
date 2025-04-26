@@ -408,7 +408,6 @@ int main_psmc(int argc, char** argv) {
 
     //this will print out the header
     writepsmc_header(stderr, pars->perc, 1);
-    exit(0);
     psmc_wrapper(pars, pars->blocksize);
     fprintf(stdout, "MM\t winsize(blocksize): %d\n", pars->blocksize);
 #if 0
