@@ -539,8 +539,13 @@ int psmc_wrapper(args* pars, int blocksize) {
   if (pars->init != -1)
     for (int i = 0; i < tk_l; i++)
       epsize[i] = pars->init;
-  if (pars->init_theta != -1)
-    theta = pars->init_theta;
+  if (pars->init_theta != -1){
+    double output_theta  = pars->init_theta;
+    theta = output_theta / 2;
+    if (pars->perc->version != 0){
+      theta /= blocksize;
+    }
+  }
   if (pars->init_rho != -1)
     rho = pars->init_rho;
   double output_theta = theta * 2 * blocksize;
@@ -554,7 +559,6 @@ int psmc_wrapper(args* pars, int blocksize) {
 #endif
   fprintf(stderr, "\t-> tk_l in psmc_wrapper pars->par->n+1 tk_l:%d p->times:%p\n", tk_l, pars->par->times);
   timer datareader_timer = starttimer();
-  if (pars->perc->version != 2) {
     int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
     fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
     objs = new fastPSMC * [nobs];
@@ -575,26 +579,7 @@ int psmc_wrapper(args* pars, int blocksize) {
       if (pars->chooseChr != NULL)
         break;
     }
-  }
-  else {
-    fprintf(stderr, "\t-> Going to read vcf\n");
-    std::map<const char*, rawdata> data = get_vcf_data(pars->perc, -1, -1);
-    int nobs = pars->chooseChr ? 1 : data.size();
-    fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
-    objs = new fastPSMC * [nobs];
-    ops = new oPars[nobs];
-    for (std::map<const char*, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
-      fastPSMC* obj = objs[nChr++] = new fastPSMC;
-      obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
-      obj->setWindows(it->second.pos, it->second.lastp, pars->blocksize);
-      obj->allocate(tk_l);
-      obj->gls = it->second.gls;
 
-      delete[] it->second.pos;
-      if (pars->chooseChr != NULL)
-        break;
-    }
-  }
   //stupid hook for allocating //fw bw
   fws_bws = new fw_bw[std::min(nThreads, nChr)];
   for (int i = 0; i < std::min(nThreads, nChr); i++) {

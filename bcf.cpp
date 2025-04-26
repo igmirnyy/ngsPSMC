@@ -27,7 +27,6 @@ perBcf* perBcf_init(const char* fname){
         bcf_hdr_destroy(pb->hdr);
         exit(1);
     }
-    pb->rec = bcf_init();
     pb->bcf_name = strdup(fname);
     return pb;
 
@@ -36,6 +35,5 @@ void perBcf_destroy(perBcf* pb){
     free(pb->bcf_name);
     bcf_hdr_destroy(pb->hdr);
     hts_idx_destroy(pb->idx);
-    bcf_destroy(pb->rec);
     bcf_close(pb->bcf_file);
 }
