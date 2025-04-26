@@ -17,6 +17,13 @@ void destroy(myMap& mm) {
     mm.clear();
 }
 
+
+double pl_to_gl(double pl) {
+    return pow(10,  -pl / 10);
+}
+
+
+
 void perpsmc_destroy(perpsmc* pp) {
     if (pp->pf)
         perFasta_destroy(pp->pf);
@@ -388,10 +395,5 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
     }
 #endif
     return ret;
-}
-
-
-double pl_to_gl(double pl) {
-    return pow(10,  -pl / 10);
 }
 
