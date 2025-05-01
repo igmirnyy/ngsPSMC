@@ -1,1 +1,1 @@
-#define ngsPSMC_VERSION "dc85034-dirty"
+#define ngsPSMC_VERSION "dd4c171-dirty"
