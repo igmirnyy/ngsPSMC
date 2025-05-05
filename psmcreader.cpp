@@ -318,8 +318,9 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
     int pl_arr_len;
     hts_itr_t* iter = bcf_itr_querys(pp->pb->idx, pp->pb->hdr, it->first);
     bcf1_t* rec = bcf_init();
+    int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
-    while  (bcf_read(pp->pb->bcf_file, pp->pb->hdr, rec) == 0) {
+    while  (bcf_read(pp->pb->bcf_file, pp->pb->hdr, rec) == 0 && rec->rid == id) {
         bcf_unpack(rec, BCF_UN_STR);
         if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
         ret.pos[i] = rec->pos + 1;
