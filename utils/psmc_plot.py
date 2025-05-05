@@ -183,7 +183,7 @@ def ReadMS(ms_objs: list[ms_data]):
             t_k, lambda_k = map(float, i.split()[:2])
             times.append(t_k * simulation_N0 * 4 * u.genTime + time_shift)
             lambdas.append(lambda_k * simulation_N0 / u.N0)
-        times = [times[0] / 2]  + times
+        times = [0]  + times
         lambdas = [simulation_N0 / u.N0] + lambdas
         AddToPlot(times, lambdas, "--", lbl = ms.name)
 
