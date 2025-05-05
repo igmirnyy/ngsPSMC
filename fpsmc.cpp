@@ -532,7 +532,7 @@ int psmc_wrapper(args* pars, int blocksize) {
   }
   fprintf(stderr, "tk_l:%d\n", tk_l);
 
-  double theta = pars->par->TR[0];
+  double output_theta = pars->par->TR[0];
   double rho = pars->par->TR[1];
 
 
@@ -541,14 +541,13 @@ int psmc_wrapper(args* pars, int blocksize) {
       epsize[i] = pars->init;
   if (pars->init_theta != -1){
     double output_theta  = pars->init_theta;
-    theta = output_theta / 2;
-    if (pars->perc->version != 0){
-      theta /= blocksize;
-    }
   }
   if (pars->init_rho != -1)
     rho = pars->init_rho;
-  double output_theta = theta * 2 * blocksize;
+  double theta = output_theta / 2;
+  if (pars->perc->version !=0){
+    theta /= blocksize;
+  }
 
   assert(theta != -1 && rho != -1 && tk_l > 0);
 

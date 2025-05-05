@@ -18,7 +18,7 @@ void destroy(myMap& mm) {
 }
 
 
-double pl_to_gl(double pl) {
+double pl_to_gl(int pl) {
     return pow(10,  -pl / 10);
 }
 
@@ -320,7 +320,7 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
     bcf1_t* rec = bcf_init();
     int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
-    while  (bcf_read(pp->pb->bcf_file, pp->pb->hdr, rec) == 0 && rec->rid == id) {
+    while  (bcf_itr_next(pp->pb->bcf_file, iter, rec)== 0) {
         bcf_unpack(rec, BCF_UN_STR);
         if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
         ret.pos[i] = rec->pos + 1;
@@ -342,14 +342,10 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
             break;
         }
         ret.gls[i] = hetero_pl - homo_pl;
-        if (i % 2500000 == 0){
-            fprintf(stderr, "%ld pos: %d gl %lf\n", i, ret.pos[i], ret.gls[i]);
-        }
         i++;
     }
     fprintf(stderr, "Read chromosome %s expected %ld got %ld", it->first, it->second.nSites , i);
     ret.len = i;
-    exit(0);
 }
 
 //this functions returns the emissions
