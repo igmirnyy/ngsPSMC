@@ -345,7 +345,6 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
         ret.gls[i] = hetero_pl - homo_pl;
         i++;
     }
-    fprintf(stderr, "Read chromosome %s expected %ld got %ld\n", it->first, it->second.nSites , i);
     ret.len = i;
     // exit(0);
 }
@@ -375,6 +374,8 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
         break;
     case 2:
         ret.len = readstuff_from_bcf(pp, it, ret);
+        fprintf(stderr, "Read chromosome %s expected %ld got %ld\n", it->first, it->second.nSites , ret.len);
+        exit(0);
     default:
         break;
     } 
