@@ -173,7 +173,6 @@ def ReadMS(ms_objs: list[ms_data]):
         t = float(command[command.index('-t')+1])
         nsites = float(command[command.index('-r')+2])
         simulation_N0 = t / nsites /4 / u.mutRate
-        time_shift = ms.date/2/u.N0/u.genTime
             
             
         size_changes = command_line.split(' -eN ')
@@ -181,7 +180,7 @@ def ReadMS(ms_objs: list[ms_data]):
         lambdas = []
         for i in size_changes[1:]:
             t_k, lambda_k = map(float, i.split()[:2])
-            times.append(t_k * simulation_N0 * 4 * u.genTime + time_shift)
+            times.append(t_k * simulation_N0 * 4 * u.genTime + ms.date)
             lambdas.append(lambda_k * simulation_N0 / u.N0)
         times = [times[0] / 2]  + times
         lambdas = [simulation_N0 / u.N0] + lambdas
