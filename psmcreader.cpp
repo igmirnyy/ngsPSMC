@@ -313,6 +313,7 @@ void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int bloc
 }
 
 long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
+    fprintf(stderr, "Reading stuff from chr %s");
     long i = 0;
     int* ploidy;
     int pl_arr_len;
@@ -344,9 +345,9 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
         ret.gls[i] = hetero_pl - homo_pl;
         i++;
     }
-    fprintf(stderr, "Read chromosome %s expected %ld got %ld", it->first, it->second.nSites , i);
+    fprintf(stderr, "Read chromosome %s expected %ld got %ld\n", it->first, it->second.nSites , i);
     ret.len = i;
-    exit(0);
+    // exit(0);
 }
 
 //this functions returns the emissions
