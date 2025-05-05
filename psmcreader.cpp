@@ -346,6 +346,7 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
     }
     fprintf(stderr, "Read chromosome %s expected %ld got %ld", it->first, it->second.nSites , i);
     ret.len = i;
+    exit(0);
 }
 
 //this functions returns the emissions
