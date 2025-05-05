@@ -375,10 +375,10 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
     case 2:
         ret.len = readstuff_from_bcf(pp, it, ret);
         fprintf(stderr, "Read chromosome %s expected %ld got %ld\n", it->first, it->second.nSites , ret.len);
-        exit(0);
     default:
         break;
     } 
+    exit(0);
     ret.firstp = 0;
     ret.lastp = it->second.nSites;
 
