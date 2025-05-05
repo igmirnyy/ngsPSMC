@@ -342,13 +342,10 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
             break;
         }
         ret.gls[i] = hetero_pl - homo_pl;
-        if (i % 4000 == 0){
+        if (i % 50000 == 0){
             fprintf(stderr, "%ld pos: %d gl %lf\n", i, ret.pos[i], ret.gls[i]);
         }
         i++;
-        if (i > 100000){
-            break;
-        }
     }
     fprintf(stderr, "Read chromosome %s expected %ld got %ld", it->first, it->second.nSites , i);
     ret.len = i;
