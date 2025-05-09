@@ -8,7 +8,6 @@
 #include "header.h"
 #include "psmcreader.h"
 #include <htslib/vcf.h>
-#include <htslib/synced_bcf_reader.h>
 #include <map>
 #include <vector>
 
@@ -314,18 +313,15 @@ void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int bloc
 }
 
 long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
-    fprintf(stderr, "Reading stuff from chr %s\n", it->first);
+    fprintf(stderr, "Reading stuff from chr %s");
     long i = 0;
     int* ploidy;
     int pl_arr_len;
     hts_itr_t* iter = bcf_itr_querys(pp->pb->idx, pp->pb->hdr, it->first);
-    bcf1_t* rec;
-    bcf_sr_set_regions(pp->pb->sr, it->first, 0);
+    bcf1_t* rec = bcf_init();
     // int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
-    while  (bcf_sr_next_line(pp->pb->sr)) {
-        bcf1_t* rec = bcf_sr_get_line(pp->pb->sr, 0);
-        if (!rec) continue;
+    while  (bcf_itr_next(pp->pb->bcf_file, iter, rec) >= 0) {
         bcf_unpack(rec, BCF_UN_STR);
         if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
         ret.pos[i] = rec->pos + 1;
@@ -350,7 +346,6 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
         i++;
         if (i > 10000) break;
     }
-    fprintf(stdout, "read sucessfully %d records", i);
     ret.len = i;
     bcf_destroy(rec);
     // exit(0);
