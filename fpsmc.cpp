@@ -578,7 +578,7 @@ int psmc_wrapper(args* pars, int blocksize) {
       if (pars->chooseChr != NULL)
         break;
     }
-
+    
   //stupid hook for allocating //fw bw
   fws_bws = new fw_bw[std::min(nThreads, nChr)];
   for (int i = 0; i < std::min(nThreads, nChr); i++) {
@@ -596,6 +596,7 @@ int psmc_wrapper(args* pars, int blocksize) {
   stoptimer(datareader_timer);
   fprintf(stdout, "MM\tfilereading took: (wall(min),cpu(min)):(%f,%f)\n", datareader_timer.tids[1],
     datareader_timer.tids[0]);
+  exit(0);
   main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t, output_theta);
 
   for (int i = 0; i < nChr; i++)

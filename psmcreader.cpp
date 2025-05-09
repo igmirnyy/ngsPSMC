@@ -319,9 +319,9 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
     int pl_arr_len;
     hts_itr_t* iter = bcf_itr_querys(pp->pb->idx, pp->pb->hdr, it->first);
     bcf1_t* rec = bcf_init();
-    int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
+    // int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
-    while  (bcf_itr_next(pp->pb->bcf_file, iter, rec)== 0) {
+    while  (bcf_itr_next(pp->pb->bcf_file, iter, rec) >= 0) {
         bcf_unpack(rec, BCF_UN_STR);
         if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
         ret.pos[i] = rec->pos + 1;
@@ -344,8 +344,10 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
         }
         ret.gls[i] = hetero_pl - homo_pl;
         i++;
+        if (i > 10000) break;
     }
     ret.len = i;
+    bcf_destroy(rec);
     // exit(0);
 }
 
@@ -378,7 +380,6 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
     default:
         break;
     } 
-    exit(0);
     ret.firstp = 0;
     ret.lastp = it->second.nSites;
 
