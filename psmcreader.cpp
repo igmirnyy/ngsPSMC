@@ -320,7 +320,7 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
     int pl_arr_len;
     hts_itr_t* iter = bcf_itr_querys(pp->pb->idx, pp->pb->hdr, it->first);
     bcf1_t* rec;
-    bcf_sr_set_regions(pp->pb->sr, it->first, 0);
+    bcf_sr_seek(pp->pb->sr, it->first, 0);
     // int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
     while  (bcf_sr_next_line(pp->pb->sr)) {
