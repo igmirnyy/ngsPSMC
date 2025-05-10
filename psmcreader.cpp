@@ -313,11 +313,12 @@ void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int bloc
 }
 
 long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
-    fprintf(stderr, "Reading stuff from chr %s");
+    fprintf(stderr, "Reading stuff from chr %s\n", it->first);
     long i = 0;
     int* ploidy;
     int pl_arr_len;
     hts_itr_t* iter = bcf_itr_querys(pp->pb->idx, pp->pb->hdr, it->first);
+    fprintf(stderr, "Iter created\n");
     bcf1_t* rec = bcf_init();
     // int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
