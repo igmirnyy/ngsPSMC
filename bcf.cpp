@@ -27,6 +27,14 @@ perBcf* perBcf_init(const char* fname){
         bcf_hdr_destroy(pb->hdr);
         exit(1);
     }
+    pb->rec = bcf_init1();
+    if (!pb->rec){
+        fprintf(stderr, "Failed to allocate BCF reader\n");
+        bcf_close(pb->bcf_file);
+        bcf_hdr_destroy(pb->hdr);
+        hts_idx_destroy(pb->idx);
+        exit(1);
+    }
     pb->bcf_name = strdup(fname);
     return pb;
 

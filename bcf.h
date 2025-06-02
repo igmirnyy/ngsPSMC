@@ -6,6 +6,7 @@ typedef struct {
     htsFile* bcf_file;
     bcf_hdr_t* hdr; //bcf header
     hts_idx_t* idx; //bcf index
+    bcf1_t* rec;
   }perBcf;
 
 perBcf* perBcf_init(const char* fname);

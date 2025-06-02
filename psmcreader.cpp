@@ -317,9 +317,9 @@ long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
     long i = 0;
     int* ploidy;
     int pl_arr_len;
-    hts_itr_t* iter = bcf_itr_querys(pp->pb->idx, pp->pb->hdr, it->first);
+    hts_itr_t* iter = bcf_itr_queryi(pp->pb->idx, bcf_hdr_name2id(pp->pb->hdr, it->first), 0, INT32_MAX);
     fprintf(stderr, "Iter created\n");
-    bcf1_t* rec = bcf_init();
+    bcf1_t* rec = pp->pb->rec;
     // int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
     double homo_pl, hetero_pl;
     while  (bcf_itr_next(pp->pb->bcf_file, iter, rec) >= 0) {
