@@ -106,7 +106,7 @@ void init_for_fasta(const char* fname, perpsmc* ret, int nChr, int& at){
 }
 void init_for_bcf(const char* fname, perpsmc* ret, int nChr, int& at){
 ret->pb = perBcf_init(fname);
-int n_seqs= 0, i= 0, rec_id= 0, res = 0, sum=0;
+int n_seqs= 0, i= 0, res = 0, sum=0;
 uint64_t mapped, unmapped;
 char* chr;
 const char ** seqnames = tbx_seqnames(ret->pb->tbx, &n_seqs);
@@ -114,8 +114,7 @@ for (i =0; i<n_seqs; i++){
     datum d;
     d.nSites = 0;
     chr = strdup(seqnames[i]);
-    res = hts_idx_get_stat(ret->pb->idx, rec_id, &mapped, &unmapped);
-    fprintf(stdout, "got stat %d %s %llu %llu\n", res, chr, mapped, unmapped);
+    res = hts_idx_get_stat(ret->pb->idx, i, &mapped, &unmapped);
     d.nSites = mapped;
     ret->nSites += d.nSites;
     d.pos = d.saf = 0;
