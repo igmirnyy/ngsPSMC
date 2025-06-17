@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <htslib/vcf.h>
+#include <htslib/tbx.h>
 #include "header.h"
 #include "bcf.h"
 
@@ -27,6 +28,13 @@ perBcf* perBcf_init(const char* fname){
         bcf_hdr_destroy(pb->hdr);
         exit(1);
     }
+    pb->tbx = tbx_index_load(fname);
+    if (!pb->tbx) {
+        fprintf(stderr, "Failed to read BCF index to file: %s\n", fname);
+        bcf_close(pb->bcf_file);
+        bcf_hdr_destroy(pb->hdr);
+        exit(1);
+    }
     pb->rec = bcf_init1();
     if (!pb->rec){
         fprintf(stderr, "Failed to allocate BCF reader\n");
@@ -43,5 +51,7 @@ void perBcf_destroy(perBcf* pb){
     free(pb->bcf_name);
     bcf_hdr_destroy(pb->hdr);
     hts_idx_destroy(pb->idx);
+    tbx_destroy(pb->tbx);
+    bcf_destroy(pb->rec);
     bcf_close(pb->bcf_file);
 }

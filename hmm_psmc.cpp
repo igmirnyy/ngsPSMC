@@ -691,7 +691,6 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
 }
 
 fastPSMC::~fastPSMC() {
-  free(cnam);
   //  delete [] gls;
   delete[] R1;
   delete[] R2;

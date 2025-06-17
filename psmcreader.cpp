@@ -8,6 +8,7 @@
 #include "header.h"
 #include "psmcreader.h"
 #include <htslib/vcf.h>
+#include <htslib/tbx.h>
 #include <map>
 #include <vector>
 
@@ -54,7 +55,7 @@ void writepsmc_header(FILE* fp, perpsmc* pp, int onlysubset) {
 }
 
 
-int psmcversion(const char* fname) {//0 - fasta, 1 - psmc, 2 - vcf/bcf
+int psmcversion(const char* fname) {//0 - fasta, 1 - psmc, 2 - bcf
     gzFile gz = Z_NULL;
     gz = gzopen(fname, "r");
     if (gz == Z_NULL) {
@@ -105,24 +106,17 @@ void init_for_fasta(const char* fname, perpsmc* ret, int nChr, int& at){
 }
 void init_for_bcf(const char* fname, perpsmc* ret, int nChr, int& at){
 ret->pb = perBcf_init(fname);
-int n_seqs, i, rec_id;
+int n_seqs= 0, i= 0, rec_id= 0, res = 0, sum=0;
 uint64_t mapped, unmapped;
 char* chr;
-const char ** seqnames = bcf_index_seqnames(ret->pb->idx, ret->pb->hdr, &n_seqs);
+const char ** seqnames = tbx_seqnames(ret->pb->tbx, &n_seqs);
 for (i =0; i<n_seqs; i++){
-    chr = strdup(seqnames[i]);
     datum d;
-    rec_id = bcf_hdr_name2id(ret->pb->hdr, seqnames[i]);
-    if (rec_id >= 0){
-        hts_idx_get_stat(ret->pb->idx, rec_id, &mapped, &unmapped);
-        d.nSites += mapped;
-    }
-    else {
-        fprintf(stderr,
-            "Problem with chr: %s, try to reindex bcf file\n",
-            chr);
-        exit(1);
-    }
+    d.nSites = 0;
+    chr = strdup(seqnames[i]);
+    res = hts_idx_get_stat(ret->pb->idx, rec_id, &mapped, &unmapped);
+    fprintf(stdout, "got stat %d %s %llu %llu\n", res, chr, mapped, unmapped);
+    d.nSites = mapped;
     ret->nSites += d.nSites;
     d.pos = d.saf = 0;
     myMap::iterator it = ret->mm.find(chr);
@@ -267,7 +261,7 @@ BGZF* bgzf_open_seek(char* fname, int64_t offs) {
 }
 
 
-void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata ret){
+void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata& ret){
     double* tmpgls = new double[2 * it->second.nSites];
     BGZF* bgzf_gls = bgzf_open_seek(pp->bgzf_gls, it->second.saf);
     BGZF* bgzf_pos = bgzf_open_seek(pp->bgzf_pos, it->second.pos);
@@ -293,7 +287,7 @@ void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata ret){
     bgzf_close(bgzf_pos);
 }
 
-void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int blockSize){
+void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata& ret, int blockSize){
     int asdf = it->second.nSites;
     char* tmp = faidx_fetch_seq(pp->pf->fai, it->first, 0, 0x7fffffff, &asdf);
     for (int i = 0;i < it->second.nSites;i++) {
@@ -312,45 +306,6 @@ void readstuff_from_fasta(perpsmc* pp, myMap::iterator it, rawdata ret, int bloc
     free(tmp);
 }
 
-long readstuff_from_bcf(perpsmc* pp, myMap::iterator it, rawdata ret){
-    fprintf(stderr, "Reading stuff from chr %s\n", it->first);
-    long i = 0;
-    int* ploidy;
-    int pl_arr_len;
-    hts_itr_t* iter = bcf_itr_queryi(pp->pb->idx, bcf_hdr_name2id(pp->pb->hdr, it->first), 0, INT32_MAX);
-    fprintf(stderr, "Iter created\n");
-    bcf1_t* rec = pp->pb->rec;
-    // int id = bcf_hdr_name2id(pp->pb->hdr, it->first);
-    double homo_pl, hetero_pl;
-    while  (bcf_itr_next(pp->pb->bcf_file, iter, rec) >= 0) {
-        bcf_unpack(rec, BCF_UN_STR);
-        if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
-        ret.pos[i] = rec->pos + 1;
-        bcf_get_format_int32(pp->pb->hdr, rec, "PL", &ploidy, &pl_arr_len);
-        //Counting PL scores
-        switch (rec->n_allele) {
-        case 2:
-            homo_pl = log(pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[2]));
-            hetero_pl = log(pl_to_gl(ploidy[1]));
-            break;
-        case 3:
-            homo_pl =log(pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]));
-            hetero_pl = log(pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[4]));
-            break;
-        case 4:
-            homo_pl = log(pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[4]) + pl_to_gl(ploidy[7]) + pl_to_gl(ploidy[9]));
-            hetero_pl = log(pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]) + pl_to_gl(ploidy[6]) + pl_to_gl(ploidy[8]));
-        default:
-            break;
-        }
-        ret.gls[i] = hetero_pl - homo_pl;
-        i++;
-        if (i > 10000) break;
-    }
-    ret.len = i;
-    bcf_destroy(rec);
-    // exit(0);
-}
 
 //this functions returns the emissions
 rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
@@ -362,7 +317,6 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
         fprintf(stderr, "\t-> [%s] Problem finding chr: \'%s\'\n", __FUNCTION__, chr);
         exit(0);
     }
-
     ret.pos = new int[it->second.nSites];
     ret.len = it->second.nSites;
     ret.gls = new double[it->second.nSites];
@@ -375,9 +329,6 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
     case 1:
         readstuff_from_psmc(pp, it, ret);
         break;
-    case 2:
-        ret.len = readstuff_from_bcf(pp, it, ret);
-        fprintf(stderr, "Read chromosome %s expected %ld got %ld\n", it->first, it->second.nSites , ret.len);
     default:
         break;
     } 
@@ -400,3 +351,66 @@ rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop) {
     return ret;
 }
 
+
+void read_bcf(perpsmc* pp, rawdata* data){
+    int i = -1;
+    int rid=-1;
+    int chr_len = 0;
+    char* chr;
+    myMap::iterator it;
+    uint64_t mapped, unmapped;
+    int* ploidy = nullptr;
+    int pl_arr_len = 0;
+    bcf1_t* rec = pp->pb->rec;
+    double homo_pl, hetero_pl;
+    while  (bcf_read(pp->pb->bcf_file, pp->pb->hdr, rec) == 0) {
+        bcf_unpack(rec, BCF_UN_ALL);
+        if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
+        if (rec->rid != rid){
+            fprintf(stdout, "\n->%d\n", rec->rid);
+            if (i != -1){
+                fprintf(stdout, ", got %d", chr_len);
+                data[i].len = chr_len;
+                data[i].lastp = chr_len;
+            }
+            chr_len = 0;
+            i += 1;
+            rid = rec->rid;
+            chr = strdup(bcf_hdr_id2name(pp->pb->hdr, rid));
+            it = pp->mm.find(chr);
+            if (it == pp->mm.end()){
+                fprintf(stderr, "\t-> [%s] Problem finding chr: \'%s\'\n", __FUNCTION__, chr);
+                exit(1);
+            }
+            fprintf(stdout, "%s expected %llu", chr, it->second.nSites);
+            data[i].gls = new double[it->second.nSites];
+            data[i].pos = new int[it->second.nSites];
+            data[i].len = it->second.nSites;
+            data[i].lastp = it->second.nSites;
+        }
+        bcf_get_format_int32(pp->pb->hdr, rec, "PL", &ploidy, &pl_arr_len);
+        //Counting PL scores
+        switch (rec->n_allele) {
+            case 2:
+            homo_pl = log(pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[2]));
+            hetero_pl = log(pl_to_gl(ploidy[1]));
+            break;
+            case 3:
+            homo_pl =log(pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]));
+            hetero_pl = log(pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[4]));
+            break;
+            case 4:
+            homo_pl = log(pl_to_gl(ploidy[0]) + pl_to_gl(ploidy[4]) + pl_to_gl(ploidy[7]) + pl_to_gl(ploidy[9]));
+            hetero_pl = log(pl_to_gl(ploidy[1]) + pl_to_gl(ploidy[2]) + pl_to_gl(ploidy[3]) + pl_to_gl(ploidy[5]) + pl_to_gl(ploidy[6]) + pl_to_gl(ploidy[8]));
+            default:
+
+            break;
+        }
+        data[i].pos[chr_len] = rec->pos + 1;
+        data[i].gls[chr_len] = hetero_pl - homo_pl;
+        chr_len += 1;
+    }
+    data[i].len = chr_len;
+    data[i].lastp = chr_len;
+    printf(", got %d\n", chr_len);
+}

@@ -562,22 +562,31 @@ int psmc_wrapper(args* pars, int blocksize) {
     fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
     objs = new fastPSMC * [nobs];
     ops = new oPars[nobs];
+    if (pars->perc->version != 2){
     for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
       rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
         -1,
         -1);
-      //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
+
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
-      obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
       obj->setWindows(rd.pos, rd.lastp, pars->blocksize);
       obj->allocate(tk_l);
       obj->gls = rd.gls;
-
-      //    fprintf(stderr,"transer:%p\n",obj[0].trans);
       delete[] rd.pos;
       if (pars->chooseChr != NULL)
         break;
     }
+  } else {
+    rawdata* data = new rawdata[nobs];
+    read_bcf(pars->perc, data);
+    for(int i = 0; i < nobs; i++){
+      fastPSMC* obj = objs[nChr++] = new fastPSMC;
+      obj->setWindows(data[i].pos, data[i].lastp, pars->blocksize);
+      obj->allocate(tk_l);
+      obj->gls = data[i].gls;
+      delete[] data[i].pos;
+    }
+  }
     
   //stupid hook for allocating //fw bw
   fws_bws = new fw_bw[std::min(nThreads, nChr)];
