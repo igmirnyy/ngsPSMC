@@ -37,7 +37,7 @@ msHOT 2 1000 -t 8196 -r 1355 3000000 -l -eN 0.01 0.05 -eN 0.0375 0.5 -eN 1.25 1.
 
 # Run examples
 ```
-./ngsPSMC input.psmc.idx -p "1*4+25*2+1*4+1*6" -dospline 0 -nthreads 8 -nIter 20 -init 1  -theta 0.000233095 -rho 0.005357
+./ngsPSMC input.psmc.idx -p "1*4+25*2+1*4+1*6" -dospline 0 -nthreads 8 -nIter 20 -init 1  -theta 0.046619 -rho 0.005357
 ```
 
 Where input are the output from either sim.d8.psmc.idx or psmcinput.psmc.idx
@@ -53,7 +53,7 @@ Notice that theta (mutation rate) and maxT (last non-inifinite time point in the
 
 If you do not use `-infile` option, it is highly recommended to specify theta if you run ngsPSMC with an organism other than humans.
 
-One can calculate it by the simple formula theta=2*N_0*mu*binsize (N_0 is a reference effective population size, e.g. 10000, mu is the mutation rate per basepair per generation, binsize is the window length. 
+One can calculate it by the simple formula theta=4*N_0*mu*binsize N_0 is a reference effective population size, e.g. 10000, mu is the mutation rate per basepair per generation, binsize is the window length. 
 
 If `-infile` is used, there is a possibility to choose which round of optimisation is used for initialisation. To choose the last round use `-rd -1`.
 
