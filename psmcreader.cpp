@@ -381,7 +381,6 @@ void read_bcf(perpsmc* pp, rawdata* data){
                 fprintf(stderr, "\t-> [%s] Problem finding chr: \'%s\'\n", __FUNCTION__, chr);
                 exit(1);
             }
-            fprintf(stdout, "%s expected %llu", chr, it->second.nSites);
             data[i].gls = new double[it->second.nSites];
             data[i].pos = new int[it->second.nSites];
             data[i].len = it->second.nSites;
@@ -411,5 +410,4 @@ void read_bcf(perpsmc* pp, rawdata* data){
     }
     data[i].len = chr_len;
     data[i].lastp = chr_len;
-    printf(", got %d\n", chr_len);
 }
