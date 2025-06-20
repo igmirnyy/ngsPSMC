@@ -355,7 +355,7 @@ void read_bcf(perpsmc* pp, rawdata* data){
     int i = -1;
     int rid=-1;
     int chr_len = 0;
-    char* chr;
+    char* chr = nullptr;
     myMap::iterator it;
     uint64_t mapped, unmapped;
     int* ploidy = nullptr;
@@ -366,15 +366,14 @@ void read_bcf(perpsmc* pp, rawdata* data){
         bcf_unpack(rec, BCF_UN_ALL);
         if (bcf_get_info_flag(pp->pb->hdr, rec, "INDEL", NULL, NULL) == 1 || rec->d.als[0] == 'N') continue;
         if (rec->rid != rid){
-            fprintf(stdout, "\n->%d\n", rec->rid);
             if (i != -1){
-                fprintf(stdout, ", got %d", chr_len);
                 data[i].len = chr_len;
                 data[i].lastp = chr_len;
             }
             chr_len = 0;
             i += 1;
             rid = rec->rid;
+            if (chr) free(chr);
             chr = strdup(bcf_hdr_id2name(pp->pb->hdr, rid));
             it = pp->mm.find(chr);
             if (it == pp->mm.end()){
@@ -410,4 +409,5 @@ void read_bcf(perpsmc* pp, rawdata* data){
     }
     data[i].len = chr_len;
     data[i].lastp = chr_len;
+    if(chr) free(chr);
 }
