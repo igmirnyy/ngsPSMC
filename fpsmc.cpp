@@ -556,6 +556,7 @@ int psmc_wrapper(args* pars, int blocksize) {
     fprintf(stderr, "psmc_wrapper: (tk,epsize)[%d]:(%f,%f)\n", i, tk[i], epsize[i]);
   exit(0);
 #endif
+  rawdata* data = NULL;
   fprintf(stderr, "\t-> tk_l in psmc_wrapper pars->par->n+1 tk_l:%d p->times:%p\n", tk_l, pars->par->times);
   timer datareader_timer = starttimer();
     int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
@@ -577,7 +578,7 @@ int psmc_wrapper(args* pars, int blocksize) {
         break;
     }
   } else {
-    rawdata* data = new rawdata[nobs];
+    data = new rawdata[nobs];
     read_bcf(pars->perc, data);
     for(int i = 0; i < nobs; i++){
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
@@ -605,9 +606,9 @@ int psmc_wrapper(args* pars, int blocksize) {
   stoptimer(datareader_timer);
   fprintf(stdout, "MM\tfilereading took: (wall(min),cpu(min)):(%f,%f)\n", datareader_timer.tids[1],
     datareader_timer.tids[0]);
-  exit(0);
   main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t, output_theta);
 
+  if (data) delete[] data;
   for (int i = 0; i < nChr; i++)
     delete objs[i];
   delete[] objs;
