@@ -540,7 +540,7 @@ int psmc_wrapper(args* pars, int blocksize) {
     for (int i = 0; i < tk_l; i++)
       epsize[i] = pars->init;
   if (pars->init_theta != -1){
-    double output_theta  = pars->init_theta;
+    output_theta  = pars->init_theta;
   }
   if (pars->init_rho != -1)
     rho = pars->init_rho;
