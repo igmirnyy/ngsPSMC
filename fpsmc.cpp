@@ -549,7 +549,7 @@ int psmc_wrapper(args* pars, int blocksize) {
     theta /= blocksize;
   }
 
-  assert(theta != -1 && rho != -1 && tk_l > 0);
+  assert(theta != -1 && rho != -1 && tk_l > 0 && theta > 0 && rho > 0);
 
 #if 0
   for (int i = 0;i < tk_l;i++)
