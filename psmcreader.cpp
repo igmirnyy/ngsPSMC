@@ -270,15 +270,7 @@ void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata& ret){
     for (int i = 0;i < it->second.nSites;i++) {
         ret.gls[i] = log(0);
         if (tmpgls[2 * i] != tmpgls[2 * i + 1]) {
-            double mmax = std::max(tmpgls[2 * i], tmpgls[2 * i + 1]);
-            double val = std::min(tmpgls[2 * i], tmpgls[2 * i + 1]) - mmax;
-
-            ret.gls[i] = val;
-            if (tmpgls[2 * i] < tmpgls[2 * i + 1])
-                ret.gls[i] = -ret.gls[i];
-
-            //code here should be implemented for using phredstyle gls //if(sizeof(mygltype))
-
+            ret.gls[i] = tmpgls[2 * i] - tmpgls[2 * i + 1];
         }
     }
     delete[] tmpgls;
