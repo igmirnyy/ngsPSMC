@@ -270,7 +270,7 @@ void readstuff_from_psmc(perpsmc* pp, myMap::iterator it, rawdata& ret){
     for (int i = 0;i < it->second.nSites;i++) {
         ret.gls[i] = log(0);
         if (tmpgls[2 * i] != tmpgls[2 * i + 1]) {
-            ret.gls[i] = tmpgls[2 * i] - tmpgls[2 * i + 1];
+            ret.gls[i] = tmpgls[2 * i + 1] - tmpgls[2 * i];
         }
     }
     delete[] tmpgls;
