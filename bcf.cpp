@@ -20,6 +20,12 @@ perBcf* perBcf_init(const char* fname){
         exit(1);
     }
     
+    if(bcf_hdr_nsamples(pb->hdr)!=1){
+        fprintf(stderr, "Multiple sample BCF files are not supported\n");
+        bcf_close(pb->bcf_file);
+        bcf_hdr_destroy(pb->hdr);
+        exit(1);
+    }
     // Load the index
     pb->idx = bcf_index_load(fname);
     if (!pb->idx) {
