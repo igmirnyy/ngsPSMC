@@ -559,6 +559,24 @@ void ComputePii(unsigned numWind, int tk_l, double** P, double** PP, double** fw
 
 }
 
+void ComputeBaumWelch(unsigned numWind, int tk_l, double** fw, double** bw, double** emis, double** trans, double** baumwelch, double pix) {
+  for (int i = 0;i < tk_l;i++) {
+    for (int j = 0;j < tk_l;j++) {
+      double tmp = log(0);
+      for (int w = 1;w < numWind;w++) {
+        tmp = addProtect2(tmp, fw[i][w] + trans[i][j] + emis[j][w + 1] + bw[j][w + 1]);
+        if (0 && w > 20)
+          exit(0);
+      }
+      baumwelch[i][j] = exp(tmp - pix);
+    }
+  }
+  for (int i = 0; i < tk_l; i++)
+    baumwelch[tk_l][i] = exp(fw[i][1] + bw[i][1] - pix);
+  // print_fw_bw_log_matrix("baumwell_from_log.csv", baumwelch, tk_l, tk_l);
+}
+
+
 
 
 void ComputeBaumWelch_norm(unsigned numWind, int tk_l, double** fw, double** bw, double* norm, double** emis, double** trans, double** baumwelch, double pix) {
