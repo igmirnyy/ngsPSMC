@@ -336,6 +336,7 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
   pthread_t thread[nThreads];
   objs[0]->make_hmm_pre(shmm.tk, shmm.tk_l, shmm.epsize, shmm.theta, rho);
+  bool print_emissions = !(objs[0]->get_has_calc_emissions());
   //  double qval =0;
   if (nThreads == 1)
     for (int i = 0;i < nChr;i++) {
@@ -364,13 +365,32 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
 #if 1
   double fwllh, bwllh, qval;
+  double fw_bw_avg_wall_time, expect_avg_wall_time, fw_bw_avg_cpu_time, expect_avg_cpu_time, emission_avg_wall_time, emission_avg_cpu_time;
   fwllh = bwllh = qval = 0;
+  fw_bw_avg_wall_time = expect_avg_wall_time = fw_bw_avg_cpu_time = expect_avg_cpu_time =emission_avg_cpu_time = emission_avg_wall_time = 0;
   for (int i = 0;i < nChr;i++) {
     //    fprintf(stderr,"\t-> hmm.fwllh for chr:%d\n",i);
     fwllh += objs[i]->fwllh;
     bwllh += objs[i]->bwllh;
     qval += objs[i]->qval;
+    fw_bw_avg_wall_time += objs[i]->fw_bw_time;
+    expect_avg_wall_time += objs[i]->expect_time;
+    emission_avg_wall_time += objs[i]->emission_time;
+    fw_bw_avg_cpu_time += objs[i]->fw_bw_clock;
+    expect_avg_cpu_time += objs[i]->expect_clock;
+    emission_avg_wall_time += objs[i]->emission_time;
+    emission_avg_cpu_time += objs[i]->emission_clock;
   }
+  fw_bw_avg_wall_time /= nChr;
+  expect_avg_wall_time /= nChr;
+  emission_avg_wall_time /= nChr;
+  fw_bw_avg_cpu_time /= CLOCKS_PER_SEC * nChr;
+  expect_avg_cpu_time /= CLOCKS_PER_SEC * nChr;
+  emission_avg_cpu_time /= CLOCKS_PER_SEC * nChr;
+  if (print_emissions)
+    fprintf(stderr, "\t-> [MAKE HMM TIME] average emissions time (wall(sec),cpu(sec)), (%.2lf, %.2lf)\n", emission_avg_wall_time, emission_avg_cpu_time);
+  fprintf(stderr, "\t-> [MAKE HMM TIME] average forward-backward time (wall(sec),cpu(sec)), (%.2lf, %.2lf)\n", fw_bw_avg_wall_time, fw_bw_avg_cpu_time);
+  fprintf(stderr, "\t-> [MAKE HMM TIME] average expectation time (wall(sec),cpu(sec)), (%.2lf, %.2lf)\n", expect_avg_wall_time, expect_avg_cpu_time);
   fprintf(stderr, "\t[total llh]  fwllh:%f\n\t[total llh]  bwllh:%f\n\t[total qval] qval:%f\n", fwllh, bwllh, qval);
   ret_llh = fwllh;
   ret_qval = qval;

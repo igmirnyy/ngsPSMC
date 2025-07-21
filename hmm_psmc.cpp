@@ -633,11 +633,15 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
       emis[i] = new double[windows.size() + 1];
     //    exit(0);
   }
-
+  
   if (has_calc_emissions == 0) {
+    time_t start = time(NULL);
+    clock_t start_clock = clock();
     calculate_emissions(tk, tk_l, gls, windows, theta, emis, epsize);
     has_calc_emissions = 1;
     delete[] gls;
+    this->emission_time = time(NULL) - start;
+    this->emission_clock = clock() - start_clock;
   }
 
   double** fw = NULL;
@@ -659,11 +663,15 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
   fw = d->fw;
   bw = d->bw;
   norm = d->norm;
-
+  time_t start = time(NULL);
+  clock_t start_clock = clock();
   if (doNorm) {
+
     calculate_FW_BW_Probs_norm(tk, tk_l, epsize, fw, bw, norm);
-
-
+    this->fw_bw_time = time(NULL) - start;
+    this->fw_bw_clock = clock() - start_clock;
+    start = time(NULL);
+    start_clock = clock();
     if (doQuadratic == 0) {
       ComputePii_norm(windows.size(), tk_l, P, PP, fw, bw, norm, stationary, emis);
       qval = qFunction_inner(tk_l, pix, windows.size(), P, PP);
@@ -672,11 +680,15 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
       ComputeBaumWelch_norm(windows.size(), tk_l, fw, bw, norm, emis, trans, baumwelch, pix);
       qval = qFunction_inner2(tk_l, P, baumwelch, trans);
     }
+    this->expect_time = time(NULL) - start;
+    this->expect_clock = clock() - start_clock;
   }
   else {
     calculate_FW_BW_Probs(tk, tk_l, epsize, fw, bw);
-
-
+    this->fw_bw_time = time(NULL) - start;
+    this->fw_bw_clock = clock() - start_clock;
+    start = time(NULL);
+    start_clock = clock();
     if (doQuadratic == 0) {
       ComputePii(windows.size(), tk_l, P, PP, fw, bw, workspace, stationary, emis);
       qval = qFunction_inner(tk_l, pix, windows.size(), P, PP);
@@ -685,8 +697,9 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
       ComputeBaumWelch(windows.size(), tk_l, fw, bw, emis, trans, baumwelch, pix);
       qval = qFunction_inner2(tk_l, P, baumwelch, trans);
     }
+    this->expect_time = time(NULL) - start;
+    this->expect_clock = clock() - start_clock;
   }
-
   return qval;
 }
 

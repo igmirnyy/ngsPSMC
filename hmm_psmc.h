@@ -1,3 +1,4 @@
+#include <time.h>
 /*
   Class that contains the perChr hmm
  */
@@ -52,6 +53,8 @@ public:
   double bwllh;
   double** baumwelch;
   double qval;
+  time_t fw_bw_time, expect_time, emission_time;
+  clock_t fw_bw_clock, expect_clock, emission_clock;
   fastPSMC() {
     pix = -666;
     max_t = 15;
@@ -86,6 +89,7 @@ public:
     fclose(fp);
     exit(0);
   }
+  int get_has_calc_emissions(){return has_calc_emissions;};
 private:
   int has_calc_emissions;
   void ComputeR2_norm(int v, double** mat) {
