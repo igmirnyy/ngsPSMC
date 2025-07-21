@@ -281,7 +281,9 @@ args* getArgs(int argc, char** argv, int dontprint) {
     p->RD = -1;
     p->nChr = -1;
     p->nThreads = 1;
-    p->doLinear = 0;
+    p->doLinear = 1;
+    p->doNorm = 0;
+    p->optRho = 0;
     p->psmc_infile = NULL;
     p->init = p->init_theta = p->init_rho = p->init_max_t = -1;
     p->init_max_t = 23.861429;
@@ -331,6 +333,12 @@ args* getArgs(int argc, char** argv, int dontprint) {
         else if (!strcasecmp(*argv, "-doLinear")) {
             p->doLinear = atoi(*++argv);
         }
+        else if (!strcasecmp(*argv, "-doNorm")) {
+            p->doNorm = atoi(*++argv);
+        }
+        else if (!strcasecmp(*argv, "-optRho")) {
+            p->optRho = atoi(*++argv);
+        }
         else if (!strcasecmp(*argv, "-r")) {
             p->chooseChr = get_region(*(++argv), p->start, p->stop);
             if (!p->chooseChr)
@@ -350,14 +358,18 @@ args* getArgs(int argc, char** argv, int dontprint) {
     srand48(p->seed);
 
     fprintf(stderr,
-        "\t-> args: tole:%f maxiter:%d chr:%s start:%d stop:%d\n\t-> fname:\'%s\' seed:%ld winsize:%d RD:%d nThreads:%d doLinear:%d -nChr:%d -ms:\'%s\' -theta: %f -rho: %f -max_t:%f\n",
+        "\t-> args: tole:%f maxiter:%d chr:%s start:%d stop:%d\n\t-> fname:\'%s\' seed:%ld winsize:%d RD:%d nThreads:%d doLinear:%d doNorm:%d -nChr:%d -ms:\'%s\' -theta: %f -rho: %f -max_t:%f\n",
         p->tole, p->maxIter, p->chooseChr, p->start, p->stop, p->fname, p->seed, p->blocksize, p->RD, p->nThreads,
-        p->doLinear, p->nChr, p->msstr, p->init_theta, p->init_rho, p->init_max_t);
+        p->doLinear, p->doNorm, p->nChr, p->msstr, p->init_theta, p->init_rho, p->init_max_t);
     extern int doQuadratic;
+    extern int doNorm;
+    extern int optRho;
     if (p->doLinear == 0)
         doQuadratic = 1;
     else
         doQuadratic = 0;
+    optRho = p->optRho;
+    doNorm = p->doNorm;
     return p;
 }
 
@@ -396,7 +408,6 @@ int main_psmc(int argc, char** argv) {
 
     //this will print out the header
     writepsmc_header(stderr, pars->perc, 1);
-
     psmc_wrapper(pars, pars->blocksize);
     fprintf(stdout, "MM\t winsize(blocksize): %d\n", pars->blocksize);
 #if 0

@@ -5,6 +5,7 @@
 #include <map>
 #include <htslib/bgzf.h>
 #include "fastas.h"
+#include "bcf.h"
 #include "header.h"
 
 //#define GL_AS_CHAR
@@ -28,14 +29,14 @@ typedef struct {
   myMap mm;
   char* bgzf_pos;
   char* bgzf_gls;
-  int version;//1 is gl, otherwise assuming fasta
+  int version;//1 is gl, 2 is bcf, 0 is fasta
   char* fname;//input.saf.idx?
   perFasta* pf;
+  perBcf* pb;
 }perpsmc;
 
 perpsmc* perpsmc_init(char* fname, int nChr);
 void writepsmc_header(FILE* fp, perpsmc* pp, int onlysubset);
 void perpsmc_destroy(perpsmc* pp);
 rawdata readstuff(perpsmc* pp, char* chr, int blockSize, int start, int stop);
-std::map<const char*, rawdata> get_vcf_data(perpsmc* pp, int start, int stop);
-std::map<const char*, rawdata> get_vcf_data(const char* fname, int start, int stop);
+void read_bcf(perpsmc* pp, rawdata* data);

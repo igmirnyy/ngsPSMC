@@ -17,6 +17,8 @@ extern int nThreads;
 int nChr = 0;
 
 int doQuadratic = 1; //<-only used in qFunction_wrapper
+int doNorm = 1;
+int optRho = 1;
 
 int DOSPLINE = 0;
 
@@ -154,15 +156,19 @@ static int ncals = 0;
 double qFunction_wrapper(const double* pars, const void* d) {
   //  fprintf(stderr,"quad: %d\n",doQuadratic);//exit(0);
   ncals++;
-  double pars2[ops[0].tk_l];
+  double pars2[ops[0].tk_l + 1];
+  if (optRho){
+    pars2[0] = pars[0];
+    pars += 1;
+  }
   if (DOSPLINE == 0)
-    convert_pattern(pars, pars2, 0);
+  convert_pattern(pars, pars2 + 1, 0);
   else {
-    spl->convert(pars, pars2, 0);
+    spl->convert(pars, pars2 + 1, 0);
     for (int i = 0;i < ops[0].tk_l;i++) {
       if (pars2[i] < 0)
-        return -1000000000;
-
+      return -1000000000;
+      
     }
   }
 #if 0
@@ -171,16 +177,15 @@ double qFunction_wrapper(const double* pars, const void* d) {
     fprintf(stderr, "%f,", pars[i]);
   fprintf(stderr, "%f)= ", pars[2 - 1]);
 #endif
-  for (int i = 0;0 && i < ops[0].tk_l;i++)
-    fprintf(stderr, "after scaling:%d %f\n", i, pars2[i]);
   //  exit(0);
 
-  ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2, ops[0].rho);
+  ComputeGlobalProbabilities(ops[0].tk, ops[0].tk_l, ops[0].nP, pars2 + 1, optRho? pars2[0] : ops[0].rho);
   if (doQuadratic) {
     double calc_trans(int, int, double**);
+    double calc_trans_norm(int, int, double**);
     for (int i = 0;i < ops[0].tk_l;i++)
       for (int j = 0;j < ops[0].tk_l;j++)
-        objs[0]->trans[i][j] = calc_trans(i, j, ops[0].nP);
+        objs[0]->trans[i][j] = doNorm?calc_trans_norm(i, j, ops[0].nP): calc_trans(i, j, ops[0].nP);
   }
   //fprintf(stderr,"\t-> calling objective function: remap_l:%d [%d]\n",remap_l,ncals);
   double ret = 0;
@@ -237,38 +242,39 @@ void stoptimer(timer& t) {
 }
 
 //tk is full
-void runoptim3(double* tk, int tk_l, double* epsize, double theta, double rho, int ndim, double& ret_qval) {
+void runoptim3(double* tk, int tk_l, double* epsize, double theta, double& rho, int ndim, double& ret_qval) {
   clock_t t = clock();
   time_t t2 = time(NULL);
   fprintf(stderr, "\t-> Starting Optimization ndim:%d\n", ndim);
 
-  double pars[ndim];
+  double pars[ndim + 1];
+  pars[0] = rho;
   if (DOSPLINE == 0)
-    convert_pattern(epsize, pars, 1);
+    convert_pattern(epsize, pars + 1, 1);
   else {
-    spl->convert(epsize, pars, 1);
+    spl->convert(epsize, pars + 1, 1);
   }
 
   //set bounds
-  int nbd[ndim];
-  double lbd[ndim];
-  double ubd[ndim];
+  int nbd[ndim + 1];
+  double lbd[ndim + 1];
+  double ubd[ndim + 1];
   if (DOSPLINE == 0) {
-    for (int i = 0;i < ndim;i++) {
+    for (int i = 0;i < ndim + 1;i++) {
       nbd[i] = 2;
       lbd[i] = 0.0001;
       ubd[i] = 1000;//PSMC_T_INF;
     }
   }
   else {
-    for (int i = 0;i < ndim / 2;i++) {
+    for (int i = 0;i < ndim + 1 / 2;i++) {
 
       nbd[i] = 2;
       lbd[i] = 0.0001;
       ubd[i] = 1000;//PSMC_T_INF;
       //      fprintf(stderr,"fv[%d][%d/%d] bd[%d]:%d:(%f,%f)\n",at++,i,ndim/2,i,nbd[i],lbd[i],ubd[i]);
     }
-    for (int i = ndim / 2;i < ndim;i++) {
+    for (int i = ndim / 2;i < ndim + 1;i++) {
       nbd[i] = 0;
       lbd[i] = -1000;
       ubd[i] = 1000;//PSMC_T_INF;
@@ -293,16 +299,17 @@ void runoptim3(double* tk, int tk_l, double* epsize, double theta, double rho, i
   ncals = 0;
   timer opt_timer = starttimer();
   //we are not optimizing llh but qfunction
-  double max_qval = findmax_bfgs(ndim, pars, NULL, qFunction_wrapper, NULL, lbd, ubd, nbd, -1);
+  double max_qval = findmax_bfgs(optRho? ndim + 1: ndim, optRho?pars: pars+1, NULL, qFunction_wrapper, NULL, lbd, ubd, nbd, -1);
   stoptimer(opt_timer);
   fprintf(stdout, "MM\toptimization: (wall(min),cpu(min)):(%f,%f) maxqval:%f\n", opt_timer.tids[1], opt_timer.tids[0], max_qval);
   ret_qval = max_qval;
   for (int i = 0;0 && i < ndim;i++)
     fprintf(stderr, "optres[%d]:%f\n", i, pars[i]);
+  rho = pars[0];
   if (DOSPLINE == 0)
-    convert_pattern(pars, epsize, 0);
+    convert_pattern(pars + 1, epsize, 0);
   else {
-    spl->convert(pars, epsize, 0);
+    spl->convert(pars + 1, epsize, 0);
   }
   fprintf(stderr, "\t-> [RUNOPTIM3 TIME]:%s cpu-time used =  %.2f sec \n", __func__, (float)(clock() - t) / CLOCKS_PER_SEC);
   fprintf(stderr, "\t-> [RUNOPTIM3 Time]:%s walltime used =  %.2f sec \n", __func__, (float)(time(NULL) - t2));
@@ -329,6 +336,7 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
   pthread_t thread[nThreads];
   objs[0]->make_hmm_pre(shmm.tk, shmm.tk_l, shmm.epsize, shmm.theta, rho);
+  bool print_emissions = !(objs[0]->get_has_calc_emissions());
   //  double qval =0;
   if (nThreads == 1)
     for (int i = 0;i < nChr;i++) {
@@ -357,13 +365,32 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
 #if 1
   double fwllh, bwllh, qval;
+  double fw_bw_avg_wall_time, expect_avg_wall_time, fw_bw_avg_cpu_time, expect_avg_cpu_time, emission_avg_wall_time, emission_avg_cpu_time;
   fwllh = bwllh = qval = 0;
+  fw_bw_avg_wall_time = expect_avg_wall_time = fw_bw_avg_cpu_time = expect_avg_cpu_time =emission_avg_cpu_time = emission_avg_wall_time = 0;
   for (int i = 0;i < nChr;i++) {
     //    fprintf(stderr,"\t-> hmm.fwllh for chr:%d\n",i);
     fwllh += objs[i]->fwllh;
     bwllh += objs[i]->bwllh;
     qval += objs[i]->qval;
+    fw_bw_avg_wall_time += objs[i]->fw_bw_time;
+    expect_avg_wall_time += objs[i]->expect_time;
+    emission_avg_wall_time += objs[i]->emission_time;
+    fw_bw_avg_cpu_time += objs[i]->fw_bw_clock;
+    expect_avg_cpu_time += objs[i]->expect_clock;
+    emission_avg_wall_time += objs[i]->emission_time;
+    emission_avg_cpu_time += objs[i]->emission_clock;
   }
+  fw_bw_avg_wall_time /= nChr;
+  expect_avg_wall_time /= nChr;
+  emission_avg_wall_time /= nChr;
+  fw_bw_avg_cpu_time /= CLOCKS_PER_SEC * nChr;
+  expect_avg_cpu_time /= CLOCKS_PER_SEC * nChr;
+  emission_avg_cpu_time /= CLOCKS_PER_SEC * nChr;
+  if (print_emissions)
+    fprintf(stderr, "\t-> [MAKE HMM TIME] average emissions time (wall(sec),cpu(sec)), (%.2lf, %.2lf)\n", emission_avg_wall_time, emission_avg_cpu_time);
+  fprintf(stderr, "\t-> [MAKE HMM TIME] average forward-backward time (wall(sec),cpu(sec)), (%.2lf, %.2lf)\n", fw_bw_avg_wall_time, fw_bw_avg_cpu_time);
+  fprintf(stderr, "\t-> [MAKE HMM TIME] average expectation time (wall(sec),cpu(sec)), (%.2lf, %.2lf)\n", expect_avg_wall_time, expect_avg_cpu_time);
   fprintf(stderr, "\t[total llh]  fwllh:%f\n\t[total llh]  bwllh:%f\n\t[total qval] qval:%f\n", fwllh, bwllh, qval);
   ret_llh = fwllh;
   ret_qval = qval;
@@ -373,7 +400,7 @@ void main_analysis_make_hmm(double* tk, int tk_l, double* epsize, double theta, 
 
 //tk_l is dimension of transistionsspace ndim is size of dimension
 //tk is tk_l long, epsize is tk_l long
-void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt) {
+void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rho, char* pattern, int ndim, int nIter, double maxt, double output_theta) {
 
   int at_it = 0;
   extern int SIG_COND;
@@ -387,7 +414,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
   fprintf(stdout, "LK\t%f\n", ret_llh0);
   fprintf(stdout, "QD\t%f -> %f\n", 0.0, 0.0);
   fprintf(stdout, "RI\t?\n");
-  fprintf(stdout, "TR\t%f\t%f\n", theta, rho);
+  fprintf(stdout, "TR\t%f\t%f\n", output_theta, rho);
   fprintf(stdout, "MT\t%f\n", maxt);
   fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
   for (int i = 0;i < tk_l;i++)//this prints out all
@@ -430,7 +457,7 @@ void main_analysis(double* tk, int tk_l, double* epsize, double theta, double rh
     ret_qval0 = qval_hmm;
     //    exit(0);
     fprintf(stdout, "RI\t?\n");
-    fprintf(stdout, "TR\t%f\t%f\n", theta, rho);
+    fprintf(stdout, "TR\t%f\t%f\n", output_theta, rho);
     fprintf(stdout, "MT\t%f\n", maxt);
     fprintf(stdout, "MM\tbuildhmm(wall(min),cpu(min)):(%f,%f) tk_l:%d\n", hmm_t.tids[1], hmm_t.tids[0], tk_l);
     for (int i = 0;i < tk_l;i++)//this prints out all
@@ -487,7 +514,7 @@ int psmc_wrapper(args* pars, int blocksize) {
   //adjust theta:
   pars->par->TR[0] = pars->par->TR[0] / 2.0;
   fprintf(stderr, "\t-> p->perc->version:%d (one is gls, otherwise fasta)\n", pars->perc->version);
-  if (pars->perc->version == 1) {//if it is gls
+  if (pars->perc->version != 0) {//if it is gls
     fprintf(stderr, "\t-> Adjusing theta with blocksize: %d\n", pars->blocksize);
     pars->par->TR[0] = pars->par->TR[0] / (1.0 * pars->blocksize);
   }
@@ -525,68 +552,63 @@ int psmc_wrapper(args* pars, int blocksize) {
   }
   fprintf(stderr, "tk_l:%d\n", tk_l);
 
-  double theta = pars->par->TR[0];
+  double output_theta = pars->par->TR[0];
   double rho = pars->par->TR[1];
 
 
   if (pars->init != -1)
     for (int i = 0; i < tk_l; i++)
       epsize[i] = pars->init;
-  if (pars->init_theta != -1)
-    theta = pars->init_theta;
+  if (pars->init_theta != -1){
+    output_theta  = pars->init_theta;
+  }
   if (pars->init_rho != -1)
     rho = pars->init_rho;
+  double theta = output_theta / 2;
+  if (pars->perc->version !=0){
+    theta /= blocksize;
+  }
 
-  assert(theta != -1 && rho != -1 && tk_l > 0);
+  assert(theta != -1 && rho != -1 && tk_l > 0 && theta > 0 && rho > 0);
 
 #if 0
   for (int i = 0;i < tk_l;i++)
     fprintf(stderr, "psmc_wrapper: (tk,epsize)[%d]:(%f,%f)\n", i, tk[i], epsize[i]);
   exit(0);
 #endif
+  rawdata* data = NULL;
   fprintf(stderr, "\t-> tk_l in psmc_wrapper pars->par->n+1 tk_l:%d p->times:%p\n", tk_l, pars->par->times);
   timer datareader_timer = starttimer();
-  if (pars->perc->version != 2) {
     int nobs = pars->chooseChr ? 1 : pars->perc->mm.size();
     fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
     objs = new fastPSMC * [nobs];
     ops = new oPars[nobs];
+    if (pars->perc->version != 2){
     for (myMap::const_iterator it = pars->perc->mm.begin(); it != pars->perc->mm.end(); it++) {
       rawdata rd = readstuff(pars->perc, pars->chooseChr != NULL ? pars->chooseChr : it->first, pars->blocksize,
         -1,
         -1);
-      //    fprintf(stderr,"\t-> Parsing chr:%s \n",it2->first);
+
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
-      obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
       obj->setWindows(rd.pos, rd.lastp, pars->blocksize);
       obj->allocate(tk_l);
       obj->gls = rd.gls;
-
-      //    fprintf(stderr,"transer:%p\n",obj[0].trans);
       delete[] rd.pos;
       if (pars->chooseChr != NULL)
         break;
     }
-  }
-  else {
-    fprintf(stderr, "\t-> Going to read vcf\n");
-    std::map<const char*, rawdata> data = get_vcf_data(pars->perc, -1, -1);
-    int nobs = pars->chooseChr ? 1 : data.size();
-    fprintf(stderr, "\t-> nobs/nchr: %d\n", nobs);
-    objs = new fastPSMC * [nobs];
-    ops = new oPars[nobs];
-    for (std::map<const char*, rawdata>::iterator it = data.begin(); it != data.end(); it++) {
+  } else {
+    data = new rawdata[nobs];
+    read_bcf(pars->perc, data);
+    for(int i = 0; i < nobs; i++){
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
-      obj->cnam = strdup(pars->chooseChr != NULL ? pars->chooseChr : it->first);
-      obj->setWindows(it->second.pos, it->second.lastp, pars->blocksize);
+      obj->setWindows(data[i].pos, data[i].lastp, pars->blocksize);
       obj->allocate(tk_l);
-      obj->gls = it->second.gls;
-
-      delete[] it->second.pos;
-      if (pars->chooseChr != NULL)
-        break;
+      obj->gls = data[i].gls;
+      delete[] data[i].pos;
     }
   }
+    
   //stupid hook for allocating //fw bw
   fws_bws = new fw_bw[std::min(nThreads, nChr)];
   for (int i = 0; i < std::min(nThreads, nChr); i++) {
@@ -604,8 +626,9 @@ int psmc_wrapper(args* pars, int blocksize) {
   stoptimer(datareader_timer);
   fprintf(stdout, "MM\tfilereading took: (wall(min),cpu(min)):(%f,%f)\n", datareader_timer.tids[1],
     datareader_timer.tids[0]);
-  main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t);
+  main_analysis(tk, tk_l, epsize, theta, rho, pattern, ndim, pars->nIter, max_t, output_theta);
 
+  if (data) delete[] data;
   for (int i = 0; i < nChr; i++)
     delete objs[i];
   delete[] objs;

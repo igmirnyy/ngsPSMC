@@ -46,7 +46,7 @@ perFasta* perFasta_init(const char* fname) {
   //check that fa hasn't been updated
   char* strtsk = NULL;
   strtsk = (char*)calloc(strlen(fname) + 5, 1);
-  sprintf(strtsk, "%s.fai", fname);
+  snprintf(strtsk, strlen(fname) + 5, "%s.fai", fname);
   if (isNewer(fname, strtsk)) {
     fprintf(stderr, "\t-> fai index file: \'%s\' looks older than corresponding fastafile: \'%s\'.\n\t-> Please reindex fasta file\n", strtsk, fname);
     exit(0);
