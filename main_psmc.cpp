@@ -128,6 +128,11 @@ void setpars(char* fname, psmc_par* pp, int which) {
     strtok(last, "\n");
 
     line = strtok(NULL, "\n");
+    // skip messages before information lines
+    while (strncmp(line, "MM", 2) == 0){
+        line = strtok(NULL, "\n");
+    }
+    fprintf(stdout, "%s", line);
     int IT = -1;
     sscanf(line, "IT\t%d", &IT);
     int RD = -1;
