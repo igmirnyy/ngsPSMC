@@ -592,6 +592,7 @@ int psmc_wrapper(args* pars, int blocksize) {
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
       obj->setWindows(rd.pos, rd.lastp, pars->blocksize);
       obj->allocate(tk_l);
+      obj->cnam = strdup(it->first);
       obj->gls = rd.gls;
       delete[] rd.pos;
       if (pars->chooseChr != NULL)

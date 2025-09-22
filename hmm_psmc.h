@@ -73,6 +73,7 @@ public:
   void allocate(int tk_l);
   void calculate_FW_BW_Probs_norm(double* tk, int tk_l, double* epsize, double** fw, double** bw, double* fw_bw_norm);
   void calculate_FW_BW_Probs(double* tk, int tk_l, double* epsize, double** fw, double** bw);
+  void print_posterior_norm(unsigned numWind, int tk_l, char* cnam, double** fw, double** bw, double* fw_bw_norm);
   void normalize(double** array, int tk_l, int index, double factor);
   void make_hmm_pre(double* tk, int tk_l, double* epsize, double theta, double rho);
   double make_hmm(double* tk, int tk_l, double* epsize, double theta, fw_bw* d);
