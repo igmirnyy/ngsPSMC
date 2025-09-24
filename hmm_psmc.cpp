@@ -395,39 +395,29 @@ void fastPSMC::allocate(int tk_l_arg) {
   first index and last index INCLUSIVE
  */
 void fastPSMC::setWindows(int* pos, int last, int block) {
-  int beginIndex = 0;
-  int endIndex = 0;
-  int beginPos = 0;
-  int endPos = beginPos + block - 1;
-
-  while (1) {
-    //fprintf(stdout,"Beginpos:%d EndPos:%d\n",beginPos,endPos);
-    wins w;
-    if (endPos > pos[last - 1])
-      break;
-
-    while (pos[beginIndex] < beginPos)
-      beginIndex++;
-    endIndex = beginIndex;
-    if (pos[endIndex] < endPos) {
-      while (pos[endIndex] < endPos) {
-        //	fprintf(stdout,"runs?\n");
-        endIndex++;
-      }
-      endIndex--;
+  if (last == 0) return;
+  int end_pos = pos[last-1];
+  int idx = 0;
+  int start_pos = pos[0];
+  for(int i = start_pos; i < end_pos; i+= block){
+    int end_idx = idx;
+    while(end_idx < last && pos[end_idx] < i + block - 1){
+       end_idx += 1;
     }
-#if 0
-    fprintf(stdout, "\t-> winsize:%d bp:%d,ep:%d bi:%d ei:%d ei-bi:%d\n", block, beginPos, endPos, beginIndex, endIndex, endIndex - beginIndex);
-#endif
-    w.from = beginIndex;
-    w.to = endIndex;
+    if (pos[end_idx] != i + block - 1 && end_idx !=idx) {
+      end_idx -= 1;
+    }
+    if (idx == end_idx) continue;
+    wins w;
+    w.from = idx;
+    w.to = end_idx;
     windows.push_back(w);
-    beginPos += block;
-    endPos += block;
+    idx = end_idx + 1;
+    if (idx > last){
+      break;
+    }
   }
-
 }
-
 
 /*
   Calculate emission probabilityes
@@ -459,12 +449,10 @@ void calculate_emissions(double* tk, int tk_l, mygltype* gls, std::vector<wins>&
   }
   else
     assert(0 != 0);
-
   for (int v = 0;v < windows.size();v++) {//for each window
     assert(windows[v].from <= windows[v].to);
     //   fprintf(stderr,"v:%d from:%d to:%d\n",v,windows[v].from,windows[v].to);
     double norm = log(0);
-
     for (int j = 0;j < tk_l;j++) {//for each interval/state
       emis[j][v + 1] = 0;
 
