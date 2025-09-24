@@ -256,7 +256,7 @@ void fastPSMC::calculate_FW_BW_Probs_norm(double* tk, int tk_l, double* epsize, 
   //now do backward algorithm
   //initialize by stationary
   for (int i = 0;i < tk_l;i++)
-    bw[i][windows.size()] = stationary[i] * emis[i][windows.size()];
+    bw[i][windows.size()] = stationary[i] * emis[i][windows.size()]/fw_bw_norm[windows.size()];
 
 
   //we plug in values at v-1, therefore we break at v==1
@@ -724,7 +724,7 @@ void fastPSMC::print_posterior_norm(unsigned numWind, int tk_l, char* cnam, doub
   for(unsigned v = 0; v < numWind; v++) {
     fprintf(out, "%d", v);
     for(int i = 0; i < tk_l; i++){
-        fprintf(out, ",%.8f", fw[i][v] * bw[i][v + 1] * fw_bw_norm[v]);
+        fprintf(out, ",%.8f", fw[i][v] * bw[i][v] * fw_bw_norm[v]);
     }
     fprintf(out, "\n");
   }
