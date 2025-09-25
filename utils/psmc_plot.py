@@ -144,12 +144,12 @@ def ReadPSMCFile(fn, RD = -1):
 def ReadPSMC(psmc_objs: list[psmc_data], maxY = None):
     u = Units()
     theta = 4.0*u.binsize*u.mutRate*u.N0
-    true_N0 = data[3]/theta
     scaleTime = 2*u.genTime*u.N0
     scaleEPS = 1
     for psmc in psmc_objs:
         data = ReadPSMCFile(psmc.file, psmc.rd)
         data[3] = data[3]/(1.0-psmc.hetloss)
+        true_N0 = data[3]/theta
         data[0] = [v * true_N0 for v in data[0]]
         data[1] = [v * true_N0 for v in data[1]]
         sdResc = psmc.date/2/u.N0/u.genTime
