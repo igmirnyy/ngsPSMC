@@ -65,7 +65,7 @@ public:
     emis = NULL;
   }
   ~fastPSMC();
-  void setWindows(int* pos, int last, int block);
+  void setWindows(const char* cnam, int* pos, int last, int block);
   void printWindows(FILE* fp) {
     for (int w = 0;w < windows.size();w++)
       fprintf(fp, "win[%d]=(%d,%d)\n", w, windows[w].from, windows[w].to);

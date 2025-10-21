@@ -277,8 +277,9 @@ void fastPSMC::calculate_FW_BW_Probs_norm(double* tk, int tk_l, double* epsize, 
 
   for (int i = 0;i < tk_l;i++) {
     bw[i][0] /= stationary[i];
-    if (std::isnan(bw[i][0])) bw[i][0] = 0;
-
+    if (std::isnan(bw[i][0])){
+      bw[i][0] = 0;
+    }
   }
   bwllh = 0;
   for (int i = 0;i < tk_l;i++)
@@ -394,7 +395,16 @@ void fastPSMC::allocate(int tk_l_arg) {
   Function will set the indices for the windows
   first index and last index INCLUSIVE
  */
-void fastPSMC::setWindows(int* pos, int last, int block) {
+void fastPSMC::setWindows(const char* cnam, int* pos, int last, int block) {
+  char *outname;
+  if (cnam != NULL){
+    outname = (char*) malloc(strlen(cnam) + 5);
+    sprintf(outname, "%s.txt", cnam);
+  } else {
+    outname = (char*) malloc(10);
+    snprintf(outname, 9, "chr.txt");
+  }
+  FILE* out = fopen(outname, "w");
   if (last == 0) return;
   int end_pos = pos[last-1];
   int idx = 0;
@@ -411,12 +421,15 @@ void fastPSMC::setWindows(int* pos, int last, int block) {
     wins w;
     w.from = idx;
     w.to = end_idx;
+    fprintf(out, "%zu %d %d\n", windows.size(), pos[idx], pos[end_idx]);
     windows.push_back(w);
     idx = end_idx + 1;
     if (idx > last){
       break;
     }
   }
+  fclose(out);
+  free(outname);
 }
 
 /*
@@ -670,7 +683,7 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
       ComputeBaumWelch_norm(windows.size(), tk_l, fw, bw, norm, emis, trans, baumwelch, pix);
       qval = qFunction_inner2(tk_l, P, baumwelch, trans);
     }
-    print_posterior_norm(windows.size(), tk_l, cnam, fw, bw, norm);
+    print_posterior_norm(windows.size() + 1, tk_l, cnam, fw, bw, norm);
     this->expect_time = time(NULL) - start;
     this->expect_clock = clock() - start_clock;
   }
@@ -700,8 +713,8 @@ void fastPSMC::print_posterior_norm(unsigned numWind, int tk_l, char* cnam, doub
     outname = (char*) malloc(strlen(cnam) + 5);
     sprintf(outname, "%s.csv", cnam);
   } else {
-    outname = (char*) malloc(10);
-    snprintf(outname, 9, "chr.csv");
+    outname = (char*) malloc(20);
+    snprintf(outname, 13, "chr_wins.csv");
   }
   FILE* out = fopen(outname, "w");
   fprintf(out, "window");
@@ -709,8 +722,8 @@ void fastPSMC::print_posterior_norm(unsigned numWind, int tk_l, char* cnam, doub
     fprintf(out, ",%d", i);
   }
   fprintf(out, "\n");
-  for(unsigned v = 0; v < numWind; v++) {
-    fprintf(out, "%d", v);
+  for(unsigned v = 1; v < numWind; v++) {
+    fprintf(out, "%d", v-1);
     for(int i = 0; i < tk_l; i++){
         fprintf(out, ",%.8f", fw[i][v] * bw[i][v] * fw_bw_norm[v]);
     }
