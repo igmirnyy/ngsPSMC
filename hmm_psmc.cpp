@@ -701,6 +701,7 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
       ComputeBaumWelch(windows.size(), tk_l, fw, bw, emis, trans, baumwelch, pix);
       qval = qFunction_inner2(tk_l, P, baumwelch, trans);
     }
+    print_posterior_log(windows.size() + 1, tk_l, cnam, fw, bw, pix);
     this->expect_time = time(NULL) - start;
     this->expect_clock = clock() - start_clock;
   }
@@ -733,6 +734,31 @@ void fastPSMC::print_posterior_norm(unsigned numWind, int tk_l, char* cnam, doub
   free(outname);
 };
 
+void fastPSMC::print_posterior_log(unsigned numWind, int tk_l, char* cnam, double** fw, double** bw, double pix){
+  char *outname;
+  if (cnam != NULL){
+    outname = (char*) malloc(strlen(cnam) + 5);
+    sprintf(outname, "%s.csv", cnam);
+  } else {
+    outname = (char*) malloc(20);
+    snprintf(outname, 13, "chr_wins.csv");
+  }
+  FILE* out = fopen(outname, "w");
+  fprintf(out, "window");
+  for(int i =0 ; i< tk_l; i++){
+    fprintf(out, ",%d", i);
+  }
+  fprintf(out, "\n");
+  for(unsigned v = 1; v < numWind; v++) {
+    fprintf(out, "%d", v-1);
+    for(int i = 0; i < tk_l; i++){
+        fprintf(out, ",%.8f", exp(fw[i][v] + bw[i][v] - pix));
+    }
+    fprintf(out, "\n");
+  }
+  fclose(out);
+  free(outname);
+};
 fastPSMC::~fastPSMC() {
   //  delete [] gls;
   delete[] R1;
