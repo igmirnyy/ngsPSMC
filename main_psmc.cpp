@@ -295,7 +295,7 @@ args* getArgs(int argc, char** argv, int dontprint) {
     p->init_rho = 0.005367;
     p->init_theta = 0.000235;
     p->msstr = NULL;
-
+    bool rho_init = false, theta_init = false;
     if (argc == 0)
         return p;
 
@@ -323,16 +323,24 @@ args* getArgs(int argc, char** argv, int dontprint) {
             p->nSites = atol(*(++argv));
         else if (!strcasecmp(*argv, "-seed"))
             p->seed = atol(*(++argv));
-        else if (!strcasecmp(*argv, "-infile"))
+        else if (!strcasecmp(*argv, "-infile")){
             p->psmc_infile = strdup(*++argv);
+            if (!rho_init)  p->init_rho = -1;
+            if (!theta_init) p->init_theta = -1;
+        }
         else if (!strcasecmp(*argv, "-init"))
             p->init = atof(*++argv);
-        else if (!strcasecmp(*argv, "-theta"))
+        else if (!strcasecmp(*argv, "-theta")){
             p->init_theta = atof(*++argv);
-        else if (!strcasecmp(*argv, "-rho"))
+            theta_init = true;
+        }
+        else if (!strcasecmp(*argv, "-rho")){
             p->init_rho = atof(*++argv);
-        else if (!strcasecmp(*argv, "-max_t"))
+            rho_init = true;
+        }
+        else if (!strcasecmp(*argv, "-max_t")){
             p->init_max_t = atof(*++argv);
+        }
         else if (!strcasecmp(*argv, "-nChr"))
             p->nChr = atoi(*++argv);
         else if (!strcasecmp(*argv, "-doLinear")) {

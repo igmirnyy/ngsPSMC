@@ -512,12 +512,6 @@ int psmc_wrapper(args* pars, int blocksize) {
     make_remapper(pars->par);
 
   //adjust theta:
-  pars->par->TR[0] = pars->par->TR[0] / 2.0;
-  fprintf(stderr, "\t-> p->perc->version:%d (one is gls, otherwise fasta)\n", pars->perc->version);
-  if (pars->perc->version != 0) {//if it is gls
-    fprintf(stderr, "\t-> Adjusing theta with blocksize: %d\n", pars->blocksize);
-    pars->par->TR[0] = pars->par->TR[0] / (1.0 * pars->blocksize);
-  }
 
 
   int tk_l = pars->par->n + 1;
