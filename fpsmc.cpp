@@ -593,6 +593,7 @@ int psmc_wrapper(args* pars, int blocksize) {
       obj->setWindows(it->first, rd.pos, rd.lastp, pars->blocksize);
       obj->allocate(tk_l);
       obj->cnam = strdup(it->first);
+      obj->dir = pars->dir;
       obj->gls = rd.gls;
       delete[] rd.pos;
       if (pars->chooseChr != NULL)
@@ -606,6 +607,7 @@ int psmc_wrapper(args* pars, int blocksize) {
       obj->setWindows("chr", data[i].pos, data[i].lastp, pars->blocksize);
       obj->allocate(tk_l);
       obj->gls = data[i].gls;
+      obj->dir = pars->dir;
       delete[] data[i].pos;
     }
   }

@@ -26,6 +26,7 @@ typedef struct {
 typedef struct {
   int nChr;
   char* chooseChr;
+  char* dir;
   int start;
   int stop;
   size_t nSites;

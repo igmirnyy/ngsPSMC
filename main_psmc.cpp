@@ -344,6 +344,9 @@ args* getArgs(int argc, char** argv, int dontprint) {
         else if (!strcasecmp(*argv, "-optRho")) {
             p->optRho = atoi(*++argv);
         }
+        else if (!strcasecmp(*argv, "-dir")) {
+            p->dir = strdup(*(++argv));
+        }
         else if (!strcasecmp(*argv, "-r")) {
             p->chooseChr = get_region(*(++argv), p->start, p->stop);
             if (!p->chooseChr)
@@ -395,6 +398,8 @@ void destroy_args(args* p) {
         free(p->par);
     if (p->psmc_infile)
         free(p->psmc_infile);
+    if (p->dir)
+        free(p->dir);
     delete p;
 }
 

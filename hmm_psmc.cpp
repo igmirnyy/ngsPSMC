@@ -711,8 +711,8 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
 void fastPSMC::print_posterior_norm(unsigned numWind, int tk_l, char* cnam, double** fw, double** bw, double* fw_bw_norm){
   char *outname;
   if (cnam != NULL){
-    outname = (char*) malloc(strlen(cnam) + 5);
-    sprintf(outname, "%s.csv", cnam);
+    outname = (char*) malloc(strlen(cnam) + strlen(this->dir) + 10);
+    sprintf(outname, "%s/%s.csv", dir, cnam);
   } else {
     outname = (char*) malloc(20);
     snprintf(outname, 13, "chr_wins.csv");

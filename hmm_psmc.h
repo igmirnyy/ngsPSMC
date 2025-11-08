@@ -33,6 +33,7 @@ public:
   //not shared between all threads
 
   char* cnam;//<-chromosomename/contig/scaffold
+  char* dir;
   int index;
   static int tot_index;
   double pix;
