@@ -294,6 +294,8 @@ args* getArgs(int argc, char** argv, int dontprint) {
     p->init_max_t = 23.861429;
     p->init_rho = 0.005367;
     p->init_theta = 0.000235;
+    p->nIter = 20;
+    p->recalculate_emission = p->nIter;
     p->msstr = NULL;
 
     if (argc == 0)
@@ -335,6 +337,8 @@ args* getArgs(int argc, char** argv, int dontprint) {
             p->init_max_t = atof(*++argv);
         else if (!strcasecmp(*argv, "-nChr"))
             p->nChr = atoi(*++argv);
+        else if (!strcasecmp(*argv, "-emis"))
+            p->recalculate_emission = atoi(*++argv);
         else if (!strcasecmp(*argv, "-doLinear")) {
             p->doLinear = atoi(*++argv);
         }

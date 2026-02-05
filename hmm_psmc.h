@@ -31,9 +31,11 @@ public:
   static double** nP;//8xtk_l
   static perpsmc* readerstructure;//is not used currently, maybe newer
   //not shared between all threads
-
+  
   char* cnam;//<-chromosomename/contig/scaffold
   int index;
+  int iter;
+  int recalculate_emission;
   static int tot_index;
   double pix;
   int tk_l;
@@ -60,6 +62,8 @@ public:
     max_t = 15;
     index = tot_index++;
     has_calc_emissions = 0;
+    iter = 0;
+    recalculate_emission = 0;
     readerstructure = NULL;
     cnam = NULL;
     emis = NULL;

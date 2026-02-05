@@ -590,6 +590,7 @@ int psmc_wrapper(args* pars, int blocksize) {
         -1);
 
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
+      obj->recalculate_emission=pars->recalculate_emission;
       obj->setWindows(rd.pos, rd.lastp, pars->blocksize);
       obj->allocate(tk_l);
       obj->gls = rd.gls;
@@ -602,6 +603,7 @@ int psmc_wrapper(args* pars, int blocksize) {
     read_bcf(pars->perc, data);
     for(int i = 0; i < nobs; i++){
       fastPSMC* obj = objs[nChr++] = new fastPSMC;
+      obj->recalculate_emission=pars->recalculate_emission;
       obj->setWindows(data[i].pos, data[i].lastp, pars->blocksize);
       obj->allocate(tk_l);
       obj->gls = data[i].gls;

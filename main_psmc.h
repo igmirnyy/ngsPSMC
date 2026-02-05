@@ -42,6 +42,7 @@ typedef struct {
   int nThreads;
   int nIter;
   int doLinear;
+  int recalculate_emission;
   int doNorm;
   int optRho;
   double init;

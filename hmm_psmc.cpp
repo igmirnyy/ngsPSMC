@@ -636,12 +636,11 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
     //    exit(0);
   }
   
-  if (has_calc_emissions == 0) {
+  if (this->iter % this->recalculate_emission == 0) {
     time_t start = time(NULL);
     clock_t start_clock = clock();
     calculate_emissions(tk, tk_l, gls, windows, theta, emis, epsize);
     has_calc_emissions = 1;
-    delete[] gls;
     this->emission_time = time(NULL) - start;
     this->emission_clock = clock() - start_clock;
   }
@@ -702,6 +701,7 @@ double fastPSMC::make_hmm(double* tk, int tk_l, double* epsize, double theta, fw
     this->expect_time = time(NULL) - start;
     this->expect_clock = clock() - start_clock;
   }
+  this->iter += 1;
   return qval;
 }
 
@@ -725,6 +725,7 @@ fastPSMC::~fastPSMC() {
       delete[] nP[i];
   }
   delete[] emis;
+  delete[] gls;
   //  delete [] fw;
   //delete [] bw;
   delete[] baumwelch;
